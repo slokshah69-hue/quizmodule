@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Sequential Quiz Portal</title>
+    <!-- Google Font for a clean layout -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Color variables and theme configurations */
+        :root {
+            --bg-dark: #070b13;
+            --bg-card: #0f172a;
+            --bg-input: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --color-success: #10b981;
+            --color-danger: #ef4444;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --transition-speed: 0.25s;
+        }
+
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient background glow points */
+        .glow-blob {
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(40px);
+            pointer-events: none;
+        }
+        .blob-1 { top: 10%; left: 10%; }
+        .blob-2 { bottom: 10%; right: 10%; }
+
+        /* Container & Header Navigation */
+        .app-container {
+            width: 100%;
+            max-width: 580px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .logo span {
+            color: var(--accent-blue);
+        }
+
+        nav .nav-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+        nav .nav-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+        nav .nav-btn.active {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: var(--bg-dark);
+            font-weight: 600;
+        }
+
+        /* Main Display Cards */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 35px 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Quiz Counter & Progress Bars */
+        .quiz-header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Mode Toggle Segment Container */
+        .mode-toggle-container {
+            display: flex;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+        }
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            font-family: inherit;
+        }
+        .mode-btn:hover {
+            color: var(--text-primary);
+        }
+        .mode-btn.active {
+            background-color: var(--accent-blue);
+            color: var(--bg-dark);
+            font-weight: 600;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent-blue);
+            width: 100%;
+            transition: width 0.1s linear, background-color 0.3s;
+        }
+
+        /* Clock styles */
+        .timer-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        .timer-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 4px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            transition: border-color 0.3s, color 0.3s, transform 0.2s;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+        }
+        .timer-circle.warning {
+            border-color: var(--color-danger);
+            color: var(--color-danger);
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
+        }
+
+        /* Question & Option Grid layout */
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .option-btn {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            padding: 16px 20px;
+            font-size: 0.95rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+        }
+        .option-btn:hover:not(:disabled) {
+            background-color: rgba(255, 255, 255, 0.04);
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.1);
+            transform: translateY(-2px);
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+        .option-btn.selected {
+            border-color: var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.05);
+            color: var(--text-primary);
+        }
+        .option-btn.correct {
+            border-color: var(--color-success) !important;
+            background-color: rgba(16, 185, 129, 0.12) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2) !important;
+            font-weight: 600;
+        }
+        .option-btn.incorrect {
+            border-color: var(--color-danger) !important;
+            background-color: rgba(239, 68, 68, 0.12) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2) !important;
+        }
+
+        /* Status & Actions */
+        .action-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            min-height: 80px;
+        }
+
+        .quiz-controls-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* Generic Forms Formatting */
+        .form-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .input-group input[type="text"],
+        .input-group input[type="password"] {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all var(--transition-speed);
+            width: 100%;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+        }
+
+        /* Custom buttons styling */
+        .btn {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            font-family: inherit;
+        }
+        .btn-primary {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: var(--bg-dark);
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+            transform: translateY(-1px);
+        }
+        .btn-success-outline {
+            background-color: rgba(16, 185, 129, 0.05);
+            border-color: var(--color-success);
+            color: var(--color-success);
+        }
+        .btn-success-outline:hover {
+            background-color: rgba(16, 185, 129, 0.15);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+            transform: translateY(-1px);
+        }
+        .btn-block {
+            width: 100%;
+        }
+
+        /* Scorecard Section Styles */
+        .scorecard-view {
+            text-align: center;
+        }
+        .score-circle {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            border: 5px solid var(--accent-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 25px auto;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes scaleUp {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .score-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Admin Dashboard & Dynamic Management Panel */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        .admin-header h3 {
+            font-size: 1.2rem;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .options-config {
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+        .option-input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .option-input-row input[type="radio"] {
+            appearance: none;
+            background-color: transparent;
+            margin: 0;
+            font: inherit;
+            color: var(--accent-blue);
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            display: grid;
+            place-content: center;
+            cursor: pointer;
+            transition: border-color var(--transition-speed);
+        }
+        .option-input-row input[type="radio"]::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em var(--accent-blue);
+        }
+        .option-input-row input[type="radio"]:checked {
+            border-color: var(--accent-blue);
+        }
+        .option-input-row input[type="radio"]:checked::before {
+            transform: scale(1);
+        }
+        .option-input-row input[type="text"] {
+            flex-grow: 1;
+        }
+
+        /* Question management list design */
+        .question-list-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            color: var(--text-primary);
+        }
+        .question-list-container {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background-color: rgba(0, 0, 0, 0.15);
+            padding: 5px;
+        }
+        .question-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            gap: 15px;
+        }
+        .question-list-item:last-child {
+            border-bottom: none;
+        }
+        .question-list-text {
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 320px;
+        }
+        .btn-delete {
+            background-color: transparent;
+            border: 1px solid var(--color-danger);
+            color: var(--color-danger);
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+        .btn-delete:hover {
+            background-color: var(--color-danger);
+            color: #ffffff;
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+        .error-msg {
+            color: var(--color-danger);
+            font-size: 0.85rem;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+        .success-banner {
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--color-success);
+            color: var(--color-success);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+        .danger-banner {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--color-danger);
+            color: var(--color-danger);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="glow-blob blob-1"></div>
+    <div class="glow-blob blob-2"></div>
+
+    <div class="app-container">
+        <!-- Navigation Header -->
+        <header>
+            <div class="logo">Quiz<span>Portal</span></div>
+            <nav>
+                <button id="nav-quiz" class="nav-btn active" onclick="switchView('quiz')">Quiz</button>
+                <button id="nav-admin" class="nav-btn" onclick="switchView('admin')">Admin Panel</button>
+            </nav>
+        </header>
+
+        <!-- Dynamic Card Component -->
+        <main class="card">
+            
+            <!-- QUIZ VIEW -->
+            <section id="view-quiz" class="view-section active">
+                <div class="quiz-header-info">
+                    <span id="question-counter">Question 1 of 1</span>
+                    <span id="live-score">Score: 0</span>
+                </div>
+
+                <!-- Toggle Quiz Mode Switch -->
+                <div class="mode-toggle-container">
+                    <button id="mode-auto" class="mode-btn active" onclick="setQuizMode('auto')">Auto Mode (Timer)</button>
+                    <button id="mode-manual" class="mode-btn" onclick="setQuizMode('manual')">Manual Mode</button>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div id="timeline" class="progress-bar"></div>
+                </div>
+                
+                <div class="timer-wrapper">
+                    <div id="clock" class="timer-circle">10</div>
+                </div>
+
+                <h2 id="quiz-question" class="question-text">Question Loading...</h2>
+
+                <div id="quiz-options" class="options-grid">
+                    <!-- Loaded dynamically via JavaScript -->
+                </div>
+
+                <div class="action-bar">
+                    <p id="quiz-status" class="status-text">Select an answer before the timer runs out!</p>
+                    <div class="quiz-controls-row">
+                        <button id="btn-show-answer" class="btn btn-success-outline hidden" onclick="revealAnswerManual()">Show Answer</button>
+                        <button id="btn-next" class="btn btn-primary hidden" onclick="handleNextStep()">Next Question</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCORECARD VIEW -->
+            <section id="view-scorecard" class="view-section">
+                <div class="scorecard-view">
+                    <h2 class="form-title">Quiz Completed!</h2>
+                    <p class="subtitle">Thank you for participating. Here is your summary score.</p>
+                    <div class="score-circle">
+                        <span id="final-score">0/0</span>
+                        <div class="score-label">Correct</div>
+                    </div>
+                    <button class="btn btn-primary btn-block" style="margin-top: 15px;" onclick="restartQuizProcess()">Restart Quiz</button>
+                </div>
+            </section>
+
+            <!-- ADMIN AUTH LOGIN VIEW -->
+            <section id="view-login" class="view-section">
+                <h2 class="form-title">Admin Login</h2>
+                <p class="subtitle">Please enter your credentials to access management panels</p>
+                <form onsubmit="handleAdminLogin(event)">
+                    <div class="input-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Username" required autocomplete="username">
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
+                    </div>
+                    <!-- Remember Me Option -->
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                        <input type="checkbox" id="remember-me" style="accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer;">
+                        <label for="remember-me" style="font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; user-select: none;">Remember me</label>
+                    </div>
+                    <div id="login-error" class="error-msg hidden">Invalid username or password. Please try again.</div>
+                    <button type="submit" class="btn btn-primary btn-block">Access Admin Settings</button>
+                </form>
+            </section>
+
+            <!-- ADMIN PANEL VIEW -->
+            <section id="view-admin-panel" class="view-section">
+                <div class="admin-header">
+                    <h3>Modify Quiz Setup</h3>
+                    <button class="btn btn-sm" onclick="handleAdminLogout()">Logout</button>
+                </div>
+                
+                <div id="admin-success" class="success-banner hidden">Question operation processed successfully!</div>
+                <div id="admin-error" class="danger-banner hidden">Question limit reached!</div>
+                
+                <form onsubmit="handleSaveQuestion(event)">
+                    <div class="input-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label for="admin-question">Question Text</label>
+                            <span id="char-counter" style="font-size: 0.75rem; color: var(--text-secondary);">0/100</span>
+                        </div>
+                        <input type="text" id="admin-question" placeholder="e.g., What is the capital of Nepal?" maxlength="100" required>
+                    </div>
+
+                    <div class="options-config">
+                        <label style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; display: block; margin-bottom: 10px;">
+                            Option Choices & Correct Selection
+                        </label>
+                        
+                        <div class="option-input-row">
+                            <input type="radio" name="correct-index" value="0" id="radio-0" checked>
+                            <input type="text" id="opt-0" placeholder="Option 1" required>
+                        </div>
+                        <div class="option-input-row">
+                            <input type="radio" name="correct-index" value="1" id="radio-1">
+                            <input type="text" id="opt-1" placeholder="Option 2" required>
+                        </div>
+                        <div class="option-input-row">
+                            <input type="radio" name="correct-index" value="2" id="radio-2">
+                            <input type="text" id="opt-2" placeholder="Option 3" required>
+                        </div>
+                        <div class="option-input-row">
+                            <input type="radio" name="correct-index" value="3" id="radio-3">
+                            <input type="text" id="opt-3" placeholder="Option 4" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Add Question to Quiz Pool</button>
+                </form>
+
+                <!-- Current Questions Listing Section -->
+                <h4 class="question-list-title">Existing Questions Pool (<span id="pool-count">0</span> / 100)</h4>
+                <div id="questions-list" class="question-list-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Scripting for seamless dynamic operation -->
+    <script>
+        // Default dataset has been cleared to let you generate your own questions.
+        const defaultQuizDataset = [];
+
+        // Active State parameters
+        let activeQuestionsPool = [];
+        let currentQuestionIndex = 0;
+        let scoreCounter = 0;
+        let timerSeconds = 10;
+        let timerInterval = null;
+        let isSelectionMade = false;
+        let quizMode = 'auto'; // 'auto' (timer-based) or 'manual' (reveals via button)
+
+        // On Page Load Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            loadQuestionsPool();
+            restartQuizProcess();
+
+            // Set up character count event listener for question preparation input
+            const qInput = document.getElementById('admin-question');
+            const charCount = document.getElementById('char-counter');
+            if (qInput && charCount) {
+                qInput.addEventListener('input', () => {
+                    charCount.innerText = `${qInput.value.length}/100`;
+                });
+            }
+
+            // Fill remembered admin username if saved
+            const rememberedUser = localStorage.getItem('remembered_admin_username');
+            if (rememberedUser) {
+                document.getElementById('username').value = rememberedUser;
+                document.getElementById('remember-me').checked = true;
+            }
+        });
+
+        // Toggle Quiz Mode configuration
+        function setQuizMode(mode) {
+            quizMode = mode;
+            
+            // Adjust UI buttons
+            document.getElementById('mode-auto').classList.toggle('active', mode === 'auto');
+            document.getElementById('mode-manual').classList.toggle('active', mode === 'manual');
+            
+            const timerWrapper = document.querySelector('.timer-wrapper');
+            const progressContainer = document.querySelector('.progress-bar-container');
+            
+            if (mode === 'manual') {
+                timerWrapper.classList.add('hidden');
+                progressContainer.classList.add('hidden');
+                clearInterval(timerInterval);
+                if (activeQuestionsPool.length > 0 && !isSelectionMade) {
+                    document.getElementById('quiz-status').innerText = "Select an answer or click 'Show Answer' below!";
+                    document.getElementById('quiz-status').style.color = 'var(--text-secondary)';
+                }
+            } else {
+                timerWrapper.classList.remove('hidden');
+                progressContainer.classList.remove('hidden');
+                // Reload current step to start timer from scratch if the pool is populated and unanswered
+                if (activeQuestionsPool.length > 0 && !isSelectionMade) {
+                    loadQuestionStep(currentQuestionIndex);
+                }
+            }
+            updateActionButtonsState();
+        }
+
+        // Pull array dataset from persistent client memory
+        function loadQuestionsPool() {
+            const pool = localStorage.getItem('sequenced_questions_pool_v2');
+            if (pool) {
+                try {
+                    activeQuestionsPool = JSON.parse(pool);
+                    if (!Array.isArray(activeQuestionsPool)) {
+                        activeQuestionsPool = [...defaultQuizDataset];
+                        savePoolToLocalStorage();
+                    }
+                } catch (e) {
+                    activeQuestionsPool = [...defaultQuizDataset];
+                    savePoolToLocalStorage();
+                }
+            } else {
+                activeQuestionsPool = [...defaultQuizDataset];
+                savePoolToLocalStorage();
+            }
+        }
+
+        function savePoolToLocalStorage() {
+            localStorage.setItem('sequenced_questions_pool_v2', JSON.stringify(activeQuestionsPool));
+        }
+
+        // Restart overall execution from Q1
+        function restartQuizProcess() {
+            currentQuestionIndex = 0;
+            scoreCounter = 0;
+            loadQuestionsPool();
+            
+            // If the pool is empty
+            if (activeQuestionsPool.length === 0) {
+                document.getElementById('quiz-question').innerText = "Please log in to the Admin Panel and add questions to begin!";
+                document.getElementById('quiz-options').innerHTML = '';
+                document.getElementById('question-counter').innerText = 'Question 0 of 0';
+                document.getElementById('live-score').innerText = 'Score: 0';
+                
+                clearInterval(timerInterval);
+                document.getElementById('clock').innerText = '--';
+                document.getElementById('timeline').style.width = '0%';
+                updateActionButtonsState();
+                return;
+            }
+
+            loadQuestionStep(currentQuestionIndex);
+        }
+
+        // Load a single step/question onto the UI
+        function loadQuestionStep(index) {
+            clearInterval(timerInterval); // Prevent standard timer multiplier bugs
+            isSelectionMade = false;
+            timerSeconds = 10;
+
+            // Interface Updates
+            document.getElementById('question-counter').innerText = `Question ${index + 1} of ${activeQuestionsPool.length}`;
+            document.getElementById('live-score').innerText = `Score: ${scoreCounter}`;
+            
+            const activeStep = activeQuestionsPool[index];
+            document.getElementById('quiz-question').innerText = activeStep.question;
+            
+            // Dynamic generation of options
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            activeStep.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.id = `option-${idx}`;
+                btn.innerText = opt;
+                btn.onclick = () => handleUserSelection(idx);
+                optionsContainer.appendChild(btn);
+            });
+
+            if (quizMode === 'auto') {
+                document.getElementById('quiz-status').innerText = "Select an answer before the timer runs out!";
+                document.getElementById('quiz-status').style.color = 'var(--text-secondary)';
+                updateTimerDisplay();
+
+                // Setup new countdown loop
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    updateTimerDisplay();
+
+                    if (timerSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        evaluateAnswers(null); // Timeout triggered
+                    }
+                }, 1000);
+            } else {
+                document.getElementById('quiz-status').innerText = "Select an answer or click 'Show Answer' below!";
+                document.getElementById('quiz-status').style.color = 'var(--text-secondary)';
+            }
+
+            updateActionButtonsState();
+        }
+
+        function updateTimerDisplay() {
+            const clock = document.getElementById('clock');
+            const timeline = document.getElementById('timeline');
+            
+            clock.innerText = timerSeconds;
+            
+            const percentRemaining = (timerSeconds / 10) * 100;
+            timeline.style.width = `${percentRemaining}%`;
+
+            if (timerSeconds <= 3) {
+                clock.classList.add('warning');
+                timeline.style.backgroundColor = 'var(--color-danger)';
+            } else {
+                clock.classList.remove('warning');
+                timeline.style.backgroundColor = 'var(--accent-blue)';
+            }
+        }
+
+        // Logic processing user selection
+        function handleUserSelection(index) {
+            if (isSelectionMade) return; // Disallow double responses
+            isSelectionMade = true;
+            
+            clearInterval(timerInterval);
+
+            // Style user selected state
+            document.getElementById(`option-${index}`).classList.add('selected');
+
+            evaluateAnswers(index);
+            updateActionButtonsState();
+        }
+
+        // Evaluate selections and highlight correct answers in green (and incorrect selected answers in red)
+        function evaluateAnswers(chosenIdx) {
+            const options = document.querySelectorAll('.option-btn');
+            options.forEach(btn => btn.disabled = true);
+
+            const activeStep = activeQuestionsPool[currentQuestionIndex];
+            const correctIdx = activeStep.correctIndex;
+            const correctBtn = document.getElementById(`option-${correctIdx}`);
+            const statusLabel = document.getElementById('quiz-status');
+
+            // Set the correct button element style to Green
+            if (correctBtn) {
+                correctBtn.classList.add('correct');
+            }
+
+            if (chosenIdx === null) {
+                if (quizMode === 'manual') {
+                    statusLabel.innerText = "Answer revealed! The correct answer is highlighted in green.";
+                    statusLabel.style.color = 'var(--accent-blue)';
+                } else {
+                    // Timeout execution
+                    statusLabel.innerText = "Time's up! The correct answer is shown in green.";
+                    statusLabel.style.color = 'var(--color-danger)';
+                }
+            } else if (chosenIdx === correctIdx) {
+                // Score increment and positive feedback
+                scoreCounter++;
+                document.getElementById('live-score').innerText = `Score: ${scoreCounter}`;
+                statusLabel.innerText = "Well done! That's correct.";
+                statusLabel.style.color = 'var(--color-success)';
+            } else {
+                // Style selected incorrect button element to Red
+                const chosenBtn = document.getElementById(`option-${chosenIdx}`);
+                if (chosenBtn) {
+                    chosenBtn.classList.remove('selected');
+                    chosenBtn.classList.add('incorrect');
+                }
+                statusLabel.innerText = "Incorrect answer. Learn and progress!";
+                statusLabel.style.color = 'var(--color-danger)';
+            }
+
+            // Configure next workflow step
+            const nextButton = document.getElementById('btn-next');
+            if (currentQuestionIndex + 1 < activeQuestionsPool.length) {
+                nextButton.innerText = "Next Question";
+            } else {
+                nextButton.innerText = "View Scorecard";
+            }
+        }
+
+        // Control the visibility states of "Show Answer" and "Next Question" buttons
+        function updateActionButtonsState() {
+            const showAnswerBtn = document.getElementById('btn-show-answer');
+            const nextBtn = document.getElementById('btn-next');
+
+            if (activeQuestionsPool.length === 0) {
+                showAnswerBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                return;
+            }
+
+            if (isSelectionMade) {
+                showAnswerBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+            } else {
+                if (quizMode === 'manual') {
+                    showAnswerBtn.classList.remove('hidden');
+                } else {
+                    showAnswerBtn.classList.add('hidden');
+                }
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        // Manually reveal correct answer (Manual Mode execution)
+        function revealAnswerManual() {
+            if (isSelectionMade) return;
+            isSelectionMade = true;
+            evaluateAnswers(null);
+            updateActionButtonsState();
+        }
+
+        // Manage click events of the navigation buttons
+        function handleNextStep() {
+            if (currentQuestionIndex + 1 < activeQuestionsPool.length) {
+                currentQuestionIndex++;
+                loadQuestionStep(currentQuestionIndex);
+            } else {
+                showFinalScorecard();
+            }
+        }
+
+        // Render scorecard statistics
+        function showFinalScorecard() {
+            clearInterval(timerInterval);
+            
+            // Deactivate other sections, activate Scorecard view
+            document.getElementById('view-quiz').classList.remove('active');
+            document.getElementById('view-scorecard').classList.add('active');
+            
+            document.getElementById('final-score').innerText = `${scoreCounter}/${activeQuestionsPool.length}`;
+        }
+
+        // Helper to check authentication state across sessions
+        function isAdminAuthenticated() {
+            return sessionStorage.getItem('admin_authenticated') === 'true' || 
+                   localStorage.getItem('admin_authenticated') === 'true';
+        }
+
+        /* --- SPA VIEW NAV CONTROLLER --- */
+        function switchView(tab) {
+            document.getElementById('nav-quiz').classList.remove('active');
+            document.getElementById('nav-admin').classList.remove('active');
+            
+            document.getElementById('view-quiz').classList.remove('active');
+            document.getElementById('view-scorecard').classList.remove('active');
+            document.getElementById('view-login').classList.remove('active');
+            document.getElementById('view-admin-panel').classList.remove('active');
+
+            if (tab === 'quiz') {
+                document.getElementById('nav-quiz').classList.add('active');
+                document.getElementById('view-quiz').classList.add('active');
+                restartQuizProcess();
+            } else if (tab === 'admin') {
+                document.getElementById('nav-admin').classList.add('active');
+                if (isAdminAuthenticated()) {
+                    showAdminDashboard();
+                } else {
+                    document.getElementById('view-login').classList.add('active');
+                }
+            }
+        }
+
+        /* --- ADMIN AUTH SECTION --- */
+        function handleAdminLogin(event) {
+            event.preventDefault();
+            const userIn = document.getElementById('username').value.trim();
+            const passIn = document.getElementById('password').value;
+            const errorLabel = document.getElementById('login-error');
+            const rememberMe = document.getElementById('remember-me').checked;
+
+            if (userIn === "Anjana Shrestha" && passIn === "2026") {
+                errorLabel.classList.add('hidden');
+                
+                // Set authentication status according to Remember Me selection
+                if (rememberMe) {
+                    localStorage.setItem('admin_authenticated', 'true');
+                    localStorage.setItem('remembered_admin_username', userIn);
+                } else {
+                    sessionStorage.setItem('admin_authenticated', 'true');
+                    localStorage.removeItem('remembered_admin_username');
+                }
+                
+                // Clear active secret form elements securely
+                document.getElementById('password').value = '';
+                
+                showAdminDashboard();
+            } else {
+                errorLabel.classList.remove('hidden');
+            }
+        }
+
+        function handleAdminLogout() {
+            sessionStorage.removeItem('admin_authenticated');
+            localStorage.removeItem('admin_authenticated');
+            switchView('quiz');
+        }
+
+        /* --- ADMIN PANEL MANAGEMENT OPERATIONS --- */
+        function showAdminDashboard() {
+            document.getElementById('view-login').classList.remove('active');
+            document.getElementById('view-admin-panel').classList.add('active');
+            
+            document.getElementById('admin-success').classList.add('hidden');
+            document.getElementById('admin-error').classList.add('hidden');
+            
+            renderAdminQuestionPoolList();
+        }
+
+        // Render dynamic list of existing questions with delete actions
+        function renderAdminQuestionPoolList() {
+            loadQuestionsPool();
+            
+            document.getElementById('pool-count').innerText = activeQuestionsPool.length;
+            const listContainer = document.getElementById('questions-list');
+            listContainer.innerHTML = '';
+
+            if (activeQuestionsPool.length === 0) {
+                listContainer.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-secondary); font-size:0.8rem;">No questions available in the current pool. Please add some below.</div>';
+                return;
+            }
+
+            activeQuestionsPool.forEach((qObj, index) => {
+                const item = document.createElement('div');
+                item.className = 'question-list-item';
+                
+                const qText = document.createElement('span');
+                qText.className = 'question-list-text';
+                qText.innerText = `${index + 1}. ${qObj.question}`;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-delete';
+                deleteBtn.innerText = 'Delete';
+                deleteBtn.onclick = () => handleQuestionDeletion(index);
+
+                item.appendChild(qText);
+                item.appendChild(deleteBtn);
+                listContainer.appendChild(item);
+            });
+        }
+
+        // Save a newly submitted question (Limited to 100 max)
+        function handleSaveQuestion(event) {
+            event.preventDefault();
+
+            // Set dynamic limit of maximum 100 questions prepared in the pool
+            if (activeQuestionsPool.length >= 100) {
+                const errBanner = document.getElementById('admin-error');
+                errBanner.innerText = "Cannot add more questions. Maximum limit of 100 prepared questions reached!";
+                errBanner.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    errBanner.classList.add('hidden');
+                }, 4000);
+                return;
+            }
+
+            const questionText = document.getElementById('admin-question').value.trim();
+            const options = [
+                document.getElementById('opt-0').value.trim(),
+                document.getElementById('opt-1').value.trim(),
+                document.getElementById('opt-2').value.trim(),
+                document.getElementById('opt-3').value.trim()
+            ];
+            
+            const selectedRadio = document.querySelector('input[name="correct-index"]:checked');
+            const correctIndex = selectedRadio ? parseInt(selectedRadio.value, 10) : 0;
+
+            const newQuestion = {
+                question: questionText,
+                options: options,
+                correctIndex: correctIndex
+            };
+
+            // Inject to array and sync
+            activeQuestionsPool.push(newQuestion);
+            savePoolToLocalStorage();
+
+            // Clear configuration inputs safely
+            document.getElementById('admin-question').value = '';
+            document.getElementById('opt-0').value = '';
+            document.getElementById('opt-1').value = '';
+            document.getElementById('opt-2').value = '';
+            document.getElementById('opt-3').value = '';
+            document.getElementById('radio-0').checked = true;
+            document.getElementById('char-counter').innerText = '0/100';
+
+            // Trigger visual feedback banner
+            const banner = document.getElementById('admin-success');
+            banner.innerText = "Question added successfully to the pool!";
+            banner.classList.remove('hidden');
+
+            renderAdminQuestionPoolList();
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Delete Question
+        function handleQuestionDeletion(index) {
+            activeQuestionsPool.splice(index, 1);
+            savePoolToLocalStorage();
+            
+            const banner = document.getElementById('admin-success');
+            banner.innerText = "Question successfully removed from the pool!";
+            banner.classList.remove('hidden');
+            
+            renderAdminQuestionPoolList();
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
