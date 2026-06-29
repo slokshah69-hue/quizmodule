@@ -4,21 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Sequential Quiz Portal</title>
+    <!-- Resource Hints for faster Font Delivery -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Google Font for a clean layout -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Color variables and theme configurations */
         :root {
-            --bg-dark: #070b13;
-            --bg-card: #0f172a;
-            --bg-input: #1e293b;
+            --bg-dark: #030712;
+            --bg-card: rgba(15, 23, 42, 0.65);
+            --bg-input: #111827;
             --accent-blue: #38bdf8;
             --accent-hover: #0ea5e9;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --color-success: #10b981;
-            --color-danger: #ef4444;
-            --border-color: rgba(255, 255, 255, 0.08);
+            --color-danger: #f43f5e;
+            --border-color: rgba(255, 255, 255, 0.05);
             --transition-speed: 0.25s;
         }
 
@@ -42,19 +45,34 @@
             position: relative;
         }
 
-        /* Ambient background glow points */
+        /* Ambient background glow points - GPU-Accelerated */
         .glow-blob {
             position: absolute;
-            width: 350px;
-            height: 350px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
             border-radius: 50%;
             z-index: -1;
-            filter: blur(40px);
+            filter: blur(50px);
             pointer-events: none;
+            will-change: transform;
         }
-        .blob-1 { top: 10%; left: 10%; }
-        .blob-2 { bottom: 10%; right: 10%; }
+        .blob-1 { 
+            top: 5%; 
+            left: 5%; 
+            animation: floatBlob 15s infinite ease-in-out;
+        }
+        .blob-2 { 
+            bottom: 5%; 
+            right: 5%; 
+            animation: floatBlob 18s infinite ease-in-out reverse;
+        }
+
+        @keyframes floatBlob {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -40px) scale(1.1); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
 
         /* Container & Header Navigation */
         .app-container {
@@ -80,18 +98,24 @@
             color: var(--accent-blue);
         }
 
+        nav {
+            display: flex;
+            gap: 8px;
+        }
+
         nav .nav-btn {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
-            padding: 8px 16px;
-            border-radius: 8px;
+            padding: 8px 18px;
+            border-radius: 10px;
             font-size: 0.85rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: all var(--transition-speed);
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         }
         nav .nav-btn:hover {
-            border-color: var(--accent-blue);
+            border-color: rgba(56, 189, 248, 0.4);
             color: var(--text-primary);
         }
         nav .nav-btn.active {
@@ -99,30 +123,38 @@
             border-color: var(--accent-blue);
             color: var(--bg-dark);
             font-weight: 600;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
         }
 
         /* Main Display Cards */
         .card {
             background-color: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border-color);
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 35px 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 
-                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.03);
             position: relative;
             overflow: hidden;
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .view-section {
             display: none;
-            animation: fadeIn 0.4s ease-out;
+            animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 100%;
         }
         .view-section.active {
             display: block;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -131,15 +163,29 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .pill-indicator {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
             color: var(--text-secondary);
+        }
+        .pill-indicator.accent {
+            border-color: rgba(56, 189, 248, 0.2);
+            color: var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.03);
         }
 
         /* Mode Toggle Segment Container */
         .mode-toggle-container {
             display: flex;
-            background-color: rgba(255, 255, 255, 0.03);
+            background-color: rgba(0, 0, 0, 0.2);
             border-radius: 12px;
             padding: 4px;
             margin-bottom: 25px;
@@ -150,7 +196,7 @@
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            padding: 8px;
+            padding: 10px;
             font-size: 0.8rem;
             font-weight: 500;
             border-radius: 8px;
@@ -162,16 +208,17 @@
             color: var(--text-primary);
         }
         .mode-btn.active {
-            background-color: var(--accent-blue);
-            color: var(--bg-dark);
+            background-color: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
             font-weight: 600;
         }
 
         .progress-bar-container {
             width: 100%;
-            height: 4px;
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 2px;
+            height: 5px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 3px;
             margin-bottom: 25px;
             overflow: hidden;
         }
@@ -179,7 +226,7 @@
             height: 100%;
             background-color: var(--accent-blue);
             width: 100%;
-            transition: width 0.1s linear, background-color 0.3s;
+            border-radius: 3px;
         }
 
         /* Clock styles */
@@ -189,23 +236,26 @@
             margin-bottom: 25px;
         }
         .timer-circle {
-            width: 70px;
-            height: 70px;
+            width: 72px;
+            height: 72px;
             border-radius: 50%;
-            border: 4px solid var(--border-color);
+            border: 3px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: var(--accent-blue);
-            transition: border-color 0.3s, color 0.3s, transform 0.2s;
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.05);
+            background-color: rgba(255, 255, 255, 0.01);
+            will-change: transform;
         }
         .timer-circle.warning {
             border-color: var(--color-danger);
             color: var(--color-danger);
             animation: pulse 1s infinite alternate;
+            box-shadow: 0 0 25px rgba(244, 63, 94, 0.15);
         }
 
         @keyframes pulse {
@@ -213,61 +263,63 @@
             100% { transform: scale(1.05); }
         }
 
-        /* Question & Option Grid layout */
+        /* Question Panel */
+        .question-container {
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
         .question-text {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 600;
-            line-height: 1.5;
+            line-height: 1.55;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        /* Modern Correct Answer Display */
+        .answer-card {
+            position: relative;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-radius: 16px;
+            padding: 24px;
             margin-bottom: 25px;
             text-align: center;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(56, 189, 248, 0.05);
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin-bottom: 25px;
+        .answer-glow {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
+            pointer-events: none;
         }
-
-        .option-btn {
-            background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            color: var(--text-secondary);
-            padding: 16px 20px;
-            font-size: 0.95rem;
-            text-align: left;
-            cursor: pointer;
-            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
+        .answer-label {
+            font-size: 0.75rem;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: block;
         }
-        .option-btn:hover:not(:disabled) {
-            background-color: rgba(255, 255, 255, 0.04);
-            border-color: var(--accent-blue);
-            color: var(--text-primary);
-            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.1);
-            transform: translateY(-2px);
-        }
-        .option-btn:disabled {
-            cursor: not-allowed;
-        }
-        .option-btn.selected {
-            border-color: var(--accent-blue);
-            background-color: rgba(56, 189, 248, 0.05);
-            color: var(--text-primary);
-        }
-        .option-btn.correct {
-            border-color: var(--color-success) !important;
-            background-color: rgba(16, 185, 129, 0.12) !important;
-            color: #ffffff !important;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2) !important;
+        .answer-text {
+            font-size: 1.15rem;
             font-weight: 600;
+            color: var(--text-primary);
         }
-        .option-btn.incorrect {
-            border-color: var(--color-danger) !important;
-            background-color: rgba(239, 68, 68, 0.12) !important;
-            color: #ffffff !important;
-            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2) !important;
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Status & Actions */
@@ -277,6 +329,7 @@
             align-items: center;
             gap: 15px;
             min-height: 80px;
+            margin-top: auto;
         }
 
         .quiz-controls-row {
@@ -287,10 +340,11 @@
         }
 
         .status-text {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
             text-align: center;
             font-weight: 500;
+            min-height: 20px;
         }
 
         /* Generic Forms Formatting */
@@ -323,8 +377,8 @@
             background-color: var(--bg-input);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
-            padding: 12px 16px;
-            border-radius: 10px;
+            padding: 14px 18px;
+            border-radius: 12px;
             font-family: inherit;
             font-size: 0.95rem;
             transition: all var(--transition-speed);
@@ -332,22 +386,27 @@
         }
         .input-group input:focus {
             outline: none;
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
         }
 
         /* Custom buttons styling */
         .btn {
-            background-color: var(--bg-input);
+            background-color: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
-            padding: 12px 24px;
-            border-radius: 10px;
+            padding: 14px 28px;
+            border-radius: 12px;
             font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all var(--transition-speed);
+            transition: all var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
             font-family: inherit;
+        }
+        .btn:hover {
+            background-color: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
         }
         .btn-primary {
             background-color: var(--accent-blue);
@@ -357,17 +416,18 @@
         .btn-primary:hover {
             background-color: var(--accent-hover);
             border-color: var(--accent-hover);
-            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
-            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+            transform: translateY(-2px);
         }
         .btn-success-outline {
-            background-color: rgba(16, 185, 129, 0.05);
-            border-color: var(--color-success);
+            background-color: rgba(16, 185, 129, 0.03);
+            border-color: rgba(16, 185, 129, 0.3);
             color: var(--color-success);
         }
         .btn-success-outline:hover {
-            background-color: rgba(16, 185, 129, 0.15);
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+            background-color: rgba(16, 185, 129, 0.08);
+            border-color: var(--color-success);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.1);
             transform: translateY(-1px);
         }
         .btn-block {
@@ -382,7 +442,7 @@
             width: 130px;
             height: 130px;
             border-radius: 50%;
-            border: 5px solid var(--accent-blue);
+            border: 4px solid var(--accent-blue);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -391,8 +451,8 @@
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--text-primary);
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
-            animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
+            animation: scaleUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         @keyframes scaleUp {
             from { transform: scale(0.8); opacity: 0; }
@@ -420,51 +480,7 @@
         .btn-sm {
             padding: 6px 12px;
             font-size: 0.8rem;
-            border-radius: 6px;
-        }
-
-        .options-config {
-            margin-top: 15px;
-            margin-bottom: 25px;
-        }
-        .option-input-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-        .option-input-row input[type="radio"] {
-            appearance: none;
-            background-color: transparent;
-            margin: 0;
-            font: inherit;
-            color: var(--accent-blue);
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border-color);
-            border-radius: 50%;
-            display: grid;
-            place-content: center;
-            cursor: pointer;
-            transition: border-color var(--transition-speed);
-        }
-        .option-input-row input[type="radio"]::before {
-            content: "";
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            transform: scale(0);
-            transition: 120ms transform ease-in-out;
-            box-shadow: inset 1em 1em var(--accent-blue);
-        }
-        .option-input-row input[type="radio"]:checked {
-            border-color: var(--accent-blue);
-        }
-        .option-input-row input[type="radio"]:checked::before {
-            transform: scale(1);
-        }
-        .option-input-row input[type="text"] {
-            flex-grow: 1;
+            border-radius: 8px;
         }
 
         /* Question management list design */
@@ -485,11 +501,27 @@
             background-color: rgba(0, 0, 0, 0.15);
             padding: 5px;
         }
+        
+        /* Smooth Scrollbars */
+        .question-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .question-list-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .question-list-container::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+        }
+        .question-list-container::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(56, 189, 248, 0.4);
+        }
+
         .question-list-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 12px;
+            padding: 12px 14px;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.85rem;
             gap: 15px;
@@ -506,17 +538,19 @@
         }
         .btn-delete {
             background-color: transparent;
-            border: 1px solid var(--color-danger);
+            border: 1px solid rgba(244, 63, 94, 0.3);
             color: var(--color-danger);
-            padding: 4px 8px;
-            border-radius: 5px;
+            padding: 4px 10px;
+            border-radius: 6px;
             font-size: 0.75rem;
             cursor: pointer;
             transition: all var(--transition-speed);
         }
         .btn-delete:hover {
             background-color: var(--color-danger);
+            border-color: var(--color-danger);
             color: #ffffff;
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
         }
 
         /* Utility classes */
@@ -530,21 +564,21 @@
             margin-bottom: 15px;
         }
         .success-banner {
-            background-color: rgba(16, 185, 129, 0.1);
-            border: 1px solid var(--color-success);
+            background-color: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
             color: var(--color-success);
-            padding: 10px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 10px;
             text-align: center;
             font-size: 0.85rem;
             margin-bottom: 15px;
         }
         .danger-banner {
-            background-color: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--color-danger);
+            background-color: rgba(244, 63, 94, 0.08);
+            border: 1px solid rgba(244, 63, 94, 0.2);
             color: var(--color-danger);
-            padding: 10px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 10px;
             text-align: center;
             font-size: 0.85rem;
             margin-bottom: 15px;
@@ -573,8 +607,8 @@
             <!-- QUIZ VIEW -->
             <section id="view-quiz" class="view-section active">
                 <div class="quiz-header-info">
-                    <span id="question-counter">Question 1 of 1</span>
-                    <span id="live-score">Score: 0</span>
+                    <span id="question-counter" class="pill-indicator">Question 1 of 1</span>
+                    <span id="live-score" class="pill-indicator accent">Progress: 0%</span>
                 </div>
 
                 <!-- Toggle Quiz Mode Switch -->
@@ -587,18 +621,29 @@
                     <div id="timeline" class="progress-bar"></div>
                 </div>
                 
+                <!-- Dynamic Timer Ring and Controller -->
                 <div class="timer-wrapper">
-                    <div id="clock" class="timer-circle">10</div>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                        <div id="clock" class="timer-circle">30</div>
+                        <button id="btn-timer-control" class="btn btn-sm" onclick="toggleTimer()" style="padding: 6px 16px; font-size: 0.75rem; border-radius: 20px; border: 1px solid var(--border-color); color: var(--text-secondary); background: rgba(255,255,255,0.02);">Pause</button>
+                    </div>
                 </div>
 
-                <h2 id="quiz-question" class="question-text">Question Loading...</h2>
+                <div class="question-container">
+                    <h2 id="quiz-question" class="question-text">Question Loading...</h2>
+                </div>
 
-                <div id="quiz-options" class="options-grid">
-                    <!-- Loaded dynamically via JavaScript -->
+                <!-- Container to hold the revealed answer -->
+                <div id="quiz-answer-wrapper" class="hidden">
+                    <div class="answer-card">
+                        <div class="answer-glow"></div>
+                        <span class="answer-label">Correct Answer</span>
+                        <h3 id="quiz-answer" class="answer-text">Answer Text</h3>
+                    </div>
                 </div>
 
                 <div class="action-bar">
-                    <p id="quiz-status" class="status-text">Select an answer before the timer runs out!</p>
+                    <p id="quiz-status" class="status-text">The answer will be revealed when the timer runs out!</p>
                     <div class="quiz-controls-row">
                         <button id="btn-show-answer" class="btn btn-success-outline hidden" onclick="revealAnswerManual()">Show Answer</button>
                         <button id="btn-next" class="btn btn-primary hidden" onclick="handleNextStep()">Next Question</button>
@@ -606,14 +651,22 @@
                 </div>
             </section>
 
+            <!-- EMPTY STATE CONTAINER (No Questions Placeholder) -->
+            <div id="quiz-empty-state" class="hidden" style="text-align: center; padding: 40px 10px;">
+                <div style="font-size: 3.5rem; margin-bottom: 20px; filter: grayscale(0.2);">📭</div>
+                <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">Your Question Pool is Empty</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 320px; margin: 0 auto 25px; line-height: 1.5;">Access the Admin Panel to configure questions and launch your flashcards.</p>
+                <button class="btn btn-primary btn-block" style="max-width: 200px; margin: 0 auto;" onclick="switchView('admin')">Go to Admin Panel</button>
+            </div>
+
             <!-- SCORECARD VIEW -->
             <section id="view-scorecard" class="view-section">
                 <div class="scorecard-view">
                     <h2 class="form-title">Quiz Completed!</h2>
-                    <p class="subtitle">Thank you for participating. Here is your summary score.</p>
+                    <p class="subtitle">You have navigated through the active sequence pool.</p>
                     <div class="score-circle">
-                        <span id="final-score">0/0</span>
-                        <div class="score-label">Correct</div>
+                        <span id="final-score">0</span>
+                        <div class="score-label">Questions</div>
                     </div>
                     <button class="btn btn-primary btn-block" style="margin-top: 15px;" onclick="restartQuizProcess()">Restart Quiz</button>
                 </div>
@@ -622,7 +675,7 @@
             <!-- ADMIN AUTH LOGIN VIEW -->
             <section id="view-login" class="view-section">
                 <h2 class="form-title">Admin Login</h2>
-                <p class="subtitle">Please enter your credentials to access management panels</p>
+                <p class="subtitle">Access controls to prepare, append, or modify quiz structures</p>
                 <form onsubmit="handleAdminLogin(event)">
                     <div class="input-group">
                         <label for="username">Username</label>
@@ -637,7 +690,7 @@
                         <input type="checkbox" id="remember-me" style="accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer;">
                         <label for="remember-me" style="font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; user-select: none;">Remember me</label>
                     </div>
-                    <div id="login-error" class="error-msg hidden">Invalid username or password. Please try again.</div>
+                    <div id="login-error" class="error-msg hidden">Invalid credentials. Please attempt again.</div>
                     <button type="submit" class="btn btn-primary btn-block">Access Admin Settings</button>
                 </form>
             </section>
@@ -648,9 +701,21 @@
                     <h3>Modify Quiz Setup</h3>
                     <button class="btn btn-sm" onclick="handleAdminLogout()">Logout</button>
                 </div>
+
+                <!-- Global configurations card -->
+                <div style="background-color: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 25px;">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="admin-timer-duration" style="font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                            <span>Timer Duration (Seconds)</span>
+                            <span id="duration-val" style="color: var(--accent-blue); font-weight: 700;">30s</span>
+                        </label>
+                        <input type="range" id="admin-timer-duration" min="5" max="120" step="5" value="30" style="accent-color: var(--accent-blue); cursor: pointer; width: 100%; margin-top: 8px;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-top: 5px;">Adjust the allowed auto-countdown duration (5s - 120s).</span>
+                    </div>
+                </div>
                 
-                <div id="admin-success" class="success-banner hidden">Question operation processed successfully!</div>
-                <div id="admin-error" class="danger-banner hidden">Question limit reached!</div>
+                <div id="admin-success" class="success-banner hidden">Question processed successfully!</div>
+                <div id="admin-error" class="danger-banner hidden">Limit reached!</div>
                 
                 <form onsubmit="handleSaveQuestion(event)">
                     <div class="input-group">
@@ -661,27 +726,9 @@
                         <input type="text" id="admin-question" placeholder="e.g., What is the capital of Nepal?" maxlength="100" required>
                     </div>
 
-                    <div class="options-config">
-                        <label style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; display: block; margin-bottom: 10px;">
-                            Option Choices & Correct Selection
-                        </label>
-                        
-                        <div class="option-input-row">
-                            <input type="radio" name="correct-index" value="0" id="radio-0" checked>
-                            <input type="text" id="opt-0" placeholder="Option 1" required>
-                        </div>
-                        <div class="option-input-row">
-                            <input type="radio" name="correct-index" value="1" id="radio-1">
-                            <input type="text" id="opt-1" placeholder="Option 2" required>
-                        </div>
-                        <div class="option-input-row">
-                            <input type="radio" name="correct-index" value="2" id="radio-2">
-                            <input type="text" id="opt-2" placeholder="Option 3" required>
-                        </div>
-                        <div class="option-input-row">
-                            <input type="radio" name="correct-index" value="3" id="radio-3">
-                            <input type="text" id="opt-3" placeholder="Option 4" required>
-                        </div>
+                    <div class="input-group" style="margin-bottom: 25px;">
+                        <label for="admin-answer">Correct Answer</label>
+                        <input type="text" id="admin-answer" placeholder="e.g., Kathmandu" required>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-block">Add Question to Quiz Pool</button>
@@ -699,37 +746,113 @@
 
     <!-- Scripting for seamless dynamic operation -->
     <script>
-        // Default dataset has been cleared to let you generate your own questions.
         const defaultQuizDataset = [];
 
         // Active State parameters
         let activeQuestionsPool = [];
         let currentQuestionIndex = 0;
-        let scoreCounter = 0;
-        let timerSeconds = 10;
+        let maxTimerDuration = 30; // Default is 30
+        let timerSeconds = maxTimerDuration;
         let timerInterval = null;
-        let isSelectionMade = false;
+        let isAnswerRevealed = false;
+        let isTimerRunning = false;
         let quizMode = 'auto'; // 'auto' (timer-based) or 'manual' (reveals via button)
+        let poolUpdated = false; // Tracks if pool changed during admin panel edits
+
+        // Global Cache Object to prevent layout thrashing & repeated DOM queries
+        let DOM = {};
+
+        function initDOMCache() {
+            DOM = {
+                navQuiz: document.getElementById('nav-quiz'),
+                navAdmin: document.getElementById('nav-admin'),
+                viewQuiz: document.getElementById('view-quiz'),
+                viewScorecard: document.getElementById('view-scorecard'),
+                viewLogin: document.getElementById('view-login'),
+                viewAdminPanel: document.getElementById('view-admin-panel'),
+                emptyState: document.getElementById('quiz-empty-state'),
+                questionCounter: document.getElementById('question-counter'),
+                liveScore: document.getElementById('live-score'),
+                modeAuto: document.getElementById('mode-auto'),
+                modeManual: document.getElementById('mode-manual'),
+                timeline: document.getElementById('timeline'),
+                clock: document.getElementById('clock'),
+                btnTimerControl: document.getElementById('btn-timer-control'),
+                quizQuestion: document.getElementById('quiz-question'),
+                quizAnswerWrapper: document.getElementById('quiz-answer-wrapper'),
+                quizAnswer: document.getElementById('quiz-answer'),
+                quizStatus: document.getElementById('quiz-status'),
+                btnShowAnswer: document.getElementById('btn-show-answer'),
+                btnNext: document.getElementById('btn-next'),
+                finalScore: document.getElementById('final-score'),
+                username: document.getElementById('username'),
+                password: document.getElementById('password'),
+                rememberMe: document.getElementById('remember-me'),
+                loginError: document.getElementById('login-error'),
+                timerDuration: document.getElementById('admin-timer-duration'),
+                durationVal: document.getElementById('duration-val'),
+                adminSuccess: document.getElementById('admin-success'),
+                adminError: document.getElementById('admin-error'),
+                adminQuestion: document.getElementById('admin-question'),
+                adminAnswer: document.getElementById('admin-answer'),
+                charCounter: document.getElementById('char-counter'),
+                poolCount: document.getElementById('pool-count'),
+                questionsList: document.getElementById('questions-list'),
+                quizHeaderInfo: document.querySelector('.quiz-header-info'),
+                modeToggleContainer: document.querySelector('.mode-toggle-container'),
+                progressBarContainer: document.querySelector('.progress-bar-container'),
+                timerWrapper: document.querySelector('.timer-wrapper'),
+                questionContainer: document.querySelector('.question-container'),
+                actionBar: document.querySelector('.action-bar')
+            };
+        }
 
         // On Page Load Initialization
         window.addEventListener('DOMContentLoaded', () => {
+            initDOMCache();
+
+            // Load custom timer configuration if saved in storage
+            const savedDuration = localStorage.getItem('quiz_timer_duration');
+            if (savedDuration) {
+                maxTimerDuration = parseInt(savedDuration, 10);
+            }
+            
+            // Sync Admin UI to loaded duration
+            if (DOM.timerDuration) {
+                DOM.timerDuration.value = maxTimerDuration;
+            }
+            if (DOM.durationVal) {
+                DOM.durationVal.innerText = `${maxTimerDuration}s`;
+            }
+
             loadQuestionsPool();
             restartQuizProcess();
 
-            // Set up character count event listener for question preparation input
-            const qInput = document.getElementById('admin-question');
-            const charCount = document.getElementById('char-counter');
-            if (qInput && charCount) {
-                qInput.addEventListener('input', () => {
-                    charCount.innerText = `${qInput.value.length}/100`;
+            // Setup character count event listener using cached nodes
+            if (DOM.adminQuestion && DOM.charCounter) {
+                DOM.adminQuestion.addEventListener('input', () => {
+                    DOM.charCounter.innerText = `${DOM.adminQuestion.value.length}/100`;
                 });
             }
 
-            // Fill remembered admin username if saved
+            // High performance slider updates: layout updates instantly on 'input', saves to disk only on 'change'
+            if (DOM.timerDuration && DOM.durationVal) {
+                DOM.timerDuration.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value, 10);
+                    maxTimerDuration = val;
+                    DOM.durationVal.innerText = `${val}s`;
+                });
+
+                DOM.timerDuration.addEventListener('change', (e) => {
+                    localStorage.setItem('quiz_timer_duration', e.target.value);
+                });
+            }
+
+            // Prefill remembered admin username if saved
             const rememberedUser = localStorage.getItem('remembered_admin_username');
-            if (rememberedUser) {
-                document.getElementById('username').value = rememberedUser;
-                document.getElementById('remember-me').checked = true;
+            if (rememberedUser && DOM.username && DOM.rememberMe) {
+                DOM.username.value = rememberedUser;
+                DOM.rememberMe.checked = true;
             }
         });
 
@@ -737,26 +860,25 @@
         function setQuizMode(mode) {
             quizMode = mode;
             
-            // Adjust UI buttons
-            document.getElementById('mode-auto').classList.toggle('active', mode === 'auto');
-            document.getElementById('mode-manual').classList.toggle('active', mode === 'manual');
+            DOM.modeAuto.classList.toggle('active', mode === 'auto');
+            DOM.modeManual.classList.toggle('active', mode === 'manual');
             
-            const timerWrapper = document.querySelector('.timer-wrapper');
-            const progressContainer = document.querySelector('.progress-bar-container');
+            const timerWrapper = DOM.timerWrapper;
+            const progressContainer = DOM.progressBarContainer;
             
             if (mode === 'manual') {
                 timerWrapper.classList.add('hidden');
                 progressContainer.classList.add('hidden');
-                clearInterval(timerInterval);
-                if (activeQuestionsPool.length > 0 && !isSelectionMade) {
-                    document.getElementById('quiz-status').innerText = "Select an answer or click 'Show Answer' below!";
-                    document.getElementById('quiz-status').style.color = 'var(--text-secondary)';
+                clearActiveTimer();
+                isTimerRunning = false;
+                if (activeQuestionsPool.length > 0 && !isAnswerRevealed) {
+                    DOM.quizStatus.innerText = "Click 'Show Answer' below to reveal the correct answer.";
+                    DOM.quizStatus.style.color = 'var(--text-secondary)';
                 }
             } else {
                 timerWrapper.classList.remove('hidden');
                 progressContainer.classList.remove('hidden');
-                // Reload current step to start timer from scratch if the pool is populated and unanswered
-                if (activeQuestionsPool.length > 0 && !isSelectionMade) {
+                if (activeQuestionsPool.length > 0 && !isAnswerRevealed) {
                     loadQuestionStep(currentQuestionIndex);
                 }
             }
@@ -772,6 +894,22 @@
                     if (!Array.isArray(activeQuestionsPool)) {
                         activeQuestionsPool = [...defaultQuizDataset];
                         savePoolToLocalStorage();
+                    } else {
+                        // Migrate legacy formats to keep database clean
+                        let modified = false;
+                        activeQuestionsPool = activeQuestionsPool.map(item => {
+                            if (item.options && item.correctIndex !== undefined && !item.answer) {
+                                modified = true;
+                                return {
+                                    question: item.question,
+                                    answer: item.options[item.correctIndex] || ''
+                                };
+                            }
+                            return item;
+                        });
+                        if (modified) {
+                            savePoolToLocalStorage();
+                        }
                     }
                 } catch (e) {
                     activeQuestionsPool = [...defaultQuizDataset];
@@ -785,26 +923,90 @@
 
         function savePoolToLocalStorage() {
             localStorage.setItem('sequenced_questions_pool_v2', JSON.stringify(activeQuestionsPool));
+            poolUpdated = true;
+        }
+
+        // Safely clear intervals and orphan processes
+        function clearActiveTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // Start/Stop Toggle action for the dynamic timer
+        function toggleTimer() {
+            if (quizMode !== 'auto' || isAnswerRevealed) return;
+
+            const timerBtn = DOM.btnTimerControl;
+            const statusLabel = DOM.quizStatus;
+
+            if (isTimerRunning) {
+                // Pause / Stop countdown
+                clearActiveTimer();
+                isTimerRunning = false;
+                if (timerBtn) {
+                    timerBtn.innerText = "Start";
+                    timerBtn.style.borderColor = "var(--accent-blue)";
+                    timerBtn.style.color = "var(--text-primary)";
+                }
+                statusLabel.innerText = "Timer stopped. Click 'Start' to resume.";
+                statusLabel.style.color = 'var(--text-secondary)';
+            } else {
+                // Resume / Start countdown
+                isTimerRunning = true;
+                if (timerBtn) {
+                    timerBtn.innerText = "Pause";
+                    timerBtn.style.borderColor = "var(--border-color)";
+                    timerBtn.style.color = "var(--text-secondary)";
+                }
+                statusLabel.innerText = "The answer will be revealed when the timer runs out!";
+                
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    updateTimerDisplay(false);
+
+                    if (timerSeconds <= 0) {
+                        clearActiveTimer();
+                        isTimerRunning = false;
+                        revealAnswer();
+                    }
+                }, 1000);
+            }
         }
 
         // Restart overall execution from Q1
         function restartQuizProcess() {
             currentQuestionIndex = 0;
-            scoreCounter = 0;
             loadQuestionsPool();
-            
-            // If the pool is empty
+            resumeQuizState();
+        }
+
+        // Safe resume without losing track when switching tabs
+        function resumeQuizState() {
+            const emptyState = DOM.emptyState;
+            const activeQuizElements = [
+                DOM.quizHeaderInfo,
+                DOM.modeToggleContainer,
+                DOM.progressBarContainer,
+                DOM.timerWrapper,
+                DOM.questionContainer,
+                DOM.actionBar
+            ];
+
             if (activeQuestionsPool.length === 0) {
-                document.getElementById('quiz-question').innerText = "Please log in to the Admin Panel and add questions to begin!";
-                document.getElementById('quiz-options').innerHTML = '';
-                document.getElementById('question-counter').innerText = 'Question 0 of 0';
-                document.getElementById('live-score').innerText = 'Score: 0';
-                
-                clearInterval(timerInterval);
-                document.getElementById('clock').innerText = '--';
-                document.getElementById('timeline').style.width = '0%';
-                updateActionButtonsState();
+                emptyState.classList.remove('hidden');
+                activeQuizElements.forEach(el => el && el.classList.add('hidden'));
+                DOM.quizAnswerWrapper.classList.add('hidden');
+                clearActiveTimer();
                 return;
+            }
+
+            emptyState.classList.add('hidden');
+            activeQuizElements.forEach(el => el && el.classList.remove('hidden'));
+
+            if (currentQuestionIndex >= activeQuestionsPool.length) {
+                currentQuestionIndex = 0;
             }
 
             loadQuestionStep(currentQuestionIndex);
@@ -812,63 +1014,85 @@
 
         // Load a single step/question onto the UI
         function loadQuestionStep(index) {
-            clearInterval(timerInterval); // Prevent standard timer multiplier bugs
-            isSelectionMade = false;
-            timerSeconds = 10;
+            clearActiveTimer();
+            isAnswerRevealed = false;
+            timerSeconds = maxTimerDuration;
 
             // Interface Updates
-            document.getElementById('question-counter').innerText = `Question ${index + 1} of ${activeQuestionsPool.length}`;
-            document.getElementById('live-score').innerText = `Score: ${scoreCounter}`;
+            DOM.questionCounter.innerText = `Question ${index + 1} of ${activeQuestionsPool.length}`;
+            
+            const progressPercent = activeQuestionsPool.length > 0 ? Math.round((index / activeQuestionsPool.length) * 100) : 0;
+            DOM.liveScore.innerText = `Progress: ${progressPercent}%`;
             
             const activeStep = activeQuestionsPool[index];
-            document.getElementById('quiz-question').innerText = activeStep.question;
+            DOM.quizQuestion.innerText = activeStep.question;
             
-            // Dynamic generation of options
-            const optionsContainer = document.getElementById('quiz-options');
-            optionsContainer.innerHTML = '';
+            // Populate and hide the correct answer container
+            DOM.quizAnswer.innerText = activeStep.answer;
+            DOM.quizAnswerWrapper.classList.add('hidden');
 
-            activeStep.options.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.id = `option-${idx}`;
-                btn.innerText = opt;
-                btn.onclick = () => handleUserSelection(idx);
-                optionsContainer.appendChild(btn);
-            });
+            const timerBtn = DOM.btnTimerControl;
 
             if (quizMode === 'auto') {
-                document.getElementById('quiz-status').innerText = "Select an answer before the timer runs out!";
-                document.getElementById('quiz-status').style.color = 'var(--text-secondary)';
-                updateTimerDisplay();
+                isTimerRunning = true;
+                if (timerBtn) {
+                    timerBtn.classList.remove('hidden');
+                    timerBtn.innerText = "Pause";
+                    timerBtn.style.borderColor = "var(--border-color)";
+                    timerBtn.style.color = "var(--text-secondary)";
+                }
 
-                // Setup new countdown loop
+                DOM.quizStatus.innerText = "The answer will be revealed when the timer runs out!";
+                DOM.quizStatus.style.color = 'var(--text-secondary)';
+                updateTimerDisplay(true); // pass true to snap timeline without transition lag
+
+                // Setup countdown loop
                 timerInterval = setInterval(() => {
                     timerSeconds--;
-                    updateTimerDisplay();
+                    updateTimerDisplay(false);
 
                     if (timerSeconds <= 0) {
-                        clearInterval(timerInterval);
-                        evaluateAnswers(null); // Timeout triggered
+                        clearActiveTimer();
+                        isTimerRunning = false;
+                        revealAnswer();
                     }
                 }, 1000);
             } else {
-                document.getElementById('quiz-status').innerText = "Select an answer or click 'Show Answer' below!";
-                document.getElementById('quiz-status').style.color = 'var(--text-secondary)';
+                isTimerRunning = false;
+                if (timerBtn) {
+                    timerBtn.classList.add('hidden');
+                }
+                DOM.quizStatus.innerText = "Click 'Show Answer' below to reveal the correct answer.";
+                DOM.quizStatus.style.color = 'var(--text-secondary)';
             }
 
             updateActionButtonsState();
         }
 
-        function updateTimerDisplay() {
-            const clock = document.getElementById('clock');
-            const timeline = document.getElementById('timeline');
+        function updateTimerDisplay(forceReset) {
+            const clock = DOM.clock;
+            const timeline = DOM.timeline;
             
             clock.innerText = timerSeconds;
-            
-            const percentRemaining = (timerSeconds / 10) * 100;
-            timeline.style.width = `${percentRemaining}%`;
+            const percentRemaining = (timerSeconds / maxTimerDuration) * 100;
 
-            if (timerSeconds <= 3) {
+            if (forceReset) {
+                timeline.style.transition = 'none';
+                timeline.style.width = '100%';
+                
+                // Double requestAnimationFrame prevents synchronous layout blocks when restarting animations
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        timeline.style.transition = 'width 1s linear, background-color 0.3s';
+                    });
+                });
+            } else {
+                timeline.style.width = `${percentRemaining}%`;
+            }
+
+            // Warning visual triggers when time remaining is 20% or less (min threshold of 3s)
+            const alertThreshold = Math.max(3, Math.round(maxTimerDuration * 0.2));
+            if (timerSeconds <= alertThreshold) {
                 clock.classList.add('warning');
                 timeline.style.backgroundColor = 'var(--color-danger)';
             } else {
@@ -877,74 +1101,47 @@
             }
         }
 
-        // Logic processing user selection
-        function handleUserSelection(index) {
-            if (isSelectionMade) return; // Disallow double responses
-            isSelectionMade = true;
-            
-            clearInterval(timerInterval);
+        // Reveal the correct answer to the user
+        function revealAnswer() {
+            if (isAnswerRevealed) return;
+            isAnswerRevealed = true;
 
-            // Style user selected state
-            document.getElementById(`option-${index}`).classList.add('selected');
+            clearActiveTimer();
+            isTimerRunning = false;
 
-            evaluateAnswers(index);
-            updateActionButtonsState();
-        }
-
-        // Evaluate selections and highlight correct answers in green (and incorrect selected answers in red)
-        function evaluateAnswers(chosenIdx) {
-            const options = document.querySelectorAll('.option-btn');
-            options.forEach(btn => btn.disabled = true);
-
-            const activeStep = activeQuestionsPool[currentQuestionIndex];
-            const correctIdx = activeStep.correctIndex;
-            const correctBtn = document.getElementById(`option-${correctIdx}`);
-            const statusLabel = document.getElementById('quiz-status');
-
-            // Set the correct button element style to Green
-            if (correctBtn) {
-                correctBtn.classList.add('correct');
+            // Hide the timer control button when revealed
+            const timerBtn = DOM.btnTimerControl;
+            if (timerBtn) {
+                timerBtn.classList.add('hidden');
             }
 
-            if (chosenIdx === null) {
-                if (quizMode === 'manual') {
-                    statusLabel.innerText = "Answer revealed! The correct answer is highlighted in green.";
-                    statusLabel.style.color = 'var(--accent-blue)';
-                } else {
-                    // Timeout execution
-                    statusLabel.innerText = "Time's up! The correct answer is shown in green.";
-                    statusLabel.style.color = 'var(--color-danger)';
-                }
-            } else if (chosenIdx === correctIdx) {
-                // Score increment and positive feedback
-                scoreCounter++;
-                document.getElementById('live-score').innerText = `Score: ${scoreCounter}`;
-                statusLabel.innerText = "Well done! That's correct.";
-                statusLabel.style.color = 'var(--color-success)';
+            // Show the answer display box
+            DOM.quizAnswerWrapper.classList.remove('hidden');
+
+            const statusLabel = DOM.quizStatus;
+            if (quizMode === 'auto') {
+                statusLabel.innerText = "Time's up! The answer has been revealed.";
+                statusLabel.style.color = 'var(--accent-blue)';
             } else {
-                // Style selected incorrect button element to Red
-                const chosenBtn = document.getElementById(`option-${chosenIdx}`);
-                if (chosenBtn) {
-                    chosenBtn.classList.remove('selected');
-                    chosenBtn.classList.add('incorrect');
-                }
-                statusLabel.innerText = "Incorrect answer. Learn and progress!";
-                statusLabel.style.color = 'var(--color-danger)';
+                statusLabel.innerText = "Answer revealed!";
+                statusLabel.style.color = 'var(--color-success)';
             }
 
-            // Configure next workflow step
-            const nextButton = document.getElementById('btn-next');
+            // Configure next button text
+            const nextButton = DOM.btnNext;
             if (currentQuestionIndex + 1 < activeQuestionsPool.length) {
                 nextButton.innerText = "Next Question";
             } else {
-                nextButton.innerText = "View Scorecard";
+                nextButton.innerText = "View Summary";
             }
+
+            updateActionButtonsState();
         }
 
         // Control the visibility states of "Show Answer" and "Next Question" buttons
         function updateActionButtonsState() {
-            const showAnswerBtn = document.getElementById('btn-show-answer');
-            const nextBtn = document.getElementById('btn-next');
+            const showAnswerBtn = DOM.btnShowAnswer;
+            const nextBtn = DOM.btnNext;
 
             if (activeQuestionsPool.length === 0) {
                 showAnswerBtn.classList.add('hidden');
@@ -952,7 +1149,7 @@
                 return;
             }
 
-            if (isSelectionMade) {
+            if (isAnswerRevealed) {
                 showAnswerBtn.classList.add('hidden');
                 nextBtn.classList.remove('hidden');
             } else {
@@ -967,13 +1164,10 @@
 
         // Manually reveal correct answer (Manual Mode execution)
         function revealAnswerManual() {
-            if (isSelectionMade) return;
-            isSelectionMade = true;
-            evaluateAnswers(null);
-            updateActionButtonsState();
+            revealAnswer();
         }
 
-        // Manage click events of the navigation buttons
+        // Manage transition to the next step
         function handleNextStep() {
             if (currentQuestionIndex + 1 < activeQuestionsPool.length) {
                 currentQuestionIndex++;
@@ -985,13 +1179,13 @@
 
         // Render scorecard statistics
         function showFinalScorecard() {
-            clearInterval(timerInterval);
+            clearActiveTimer();
             
             // Deactivate other sections, activate Scorecard view
-            document.getElementById('view-quiz').classList.remove('active');
-            document.getElementById('view-scorecard').classList.add('active');
+            DOM.viewQuiz.classList.remove('active');
+            DOM.viewScorecard.classList.add('active');
             
-            document.getElementById('final-score').innerText = `${scoreCounter}/${activeQuestionsPool.length}`;
+            DOM.finalScore.innerText = `${activeQuestionsPool.length}`;
         }
 
         // Helper to check authentication state across sessions
@@ -1002,24 +1196,32 @@
 
         /* --- SPA VIEW NAV CONTROLLER --- */
         function switchView(tab) {
-            document.getElementById('nav-quiz').classList.remove('active');
-            document.getElementById('nav-admin').classList.remove('active');
+            DOM.navQuiz.classList.remove('active');
+            DOM.navAdmin.classList.remove('active');
             
-            document.getElementById('view-quiz').classList.remove('active');
-            document.getElementById('view-scorecard').classList.remove('active');
-            document.getElementById('view-login').classList.remove('active');
-            document.getElementById('view-admin-panel').classList.remove('active');
+            DOM.viewQuiz.classList.remove('active');
+            DOM.viewScorecard.classList.remove('active');
+            DOM.viewLogin.classList.remove('active');
+            DOM.viewAdminPanel.classList.remove('active');
+            DOM.emptyState.classList.add('hidden');
 
             if (tab === 'quiz') {
-                document.getElementById('nav-quiz').classList.add('active');
-                document.getElementById('view-quiz').classList.add('active');
-                restartQuizProcess();
+                DOM.navQuiz.classList.add('active');
+                DOM.viewQuiz.classList.add('active');
+                
+                if (poolUpdated) {
+                    restartQuizProcess();
+                    poolUpdated = false;
+                } else {
+                    resumeQuizState();
+                }
             } else if (tab === 'admin') {
-                document.getElementById('nav-admin').classList.add('active');
+                DOM.navAdmin.classList.add('active');
+                clearActiveTimer();
                 if (isAdminAuthenticated()) {
                     showAdminDashboard();
                 } else {
-                    document.getElementById('view-login').classList.add('active');
+                    DOM.viewLogin.classList.add('active');
                 }
             }
         }
@@ -1027,10 +1229,10 @@
         /* --- ADMIN AUTH SECTION --- */
         function handleAdminLogin(event) {
             event.preventDefault();
-            const userIn = document.getElementById('username').value.trim();
-            const passIn = document.getElementById('password').value;
-            const errorLabel = document.getElementById('login-error');
-            const rememberMe = document.getElementById('remember-me').checked;
+            const userIn = DOM.username.value.trim();
+            const passIn = DOM.password.value;
+            const errorLabel = DOM.loginError;
+            const rememberMe = DOM.rememberMe.checked;
 
             if (userIn === "Anjana Shrestha" && passIn === "2026") {
                 errorLabel.classList.add('hidden');
@@ -1045,7 +1247,7 @@
                 }
                 
                 // Clear active secret form elements securely
-                document.getElementById('password').value = '';
+                DOM.password.value = '';
                 
                 showAdminDashboard();
             } else {
@@ -1061,27 +1263,29 @@
 
         /* --- ADMIN PANEL MANAGEMENT OPERATIONS --- */
         function showAdminDashboard() {
-            document.getElementById('view-login').classList.remove('active');
-            document.getElementById('view-admin-panel').classList.add('active');
+            DOM.viewLogin.classList.remove('active');
+            DOM.viewAdminPanel.classList.add('active');
             
-            document.getElementById('admin-success').classList.add('hidden');
-            document.getElementById('admin-error').classList.add('hidden');
+            DOM.adminSuccess.classList.add('hidden');
+            DOM.adminError.classList.add('hidden');
             
             renderAdminQuestionPoolList();
         }
 
-        // Render dynamic list of existing questions with delete actions
+        // Render dynamic list of existing questions using DocumentFragments for single-draw cycle layout speed
         function renderAdminQuestionPoolList() {
             loadQuestionsPool();
             
-            document.getElementById('pool-count').innerText = activeQuestionsPool.length;
-            const listContainer = document.getElementById('questions-list');
+            DOM.poolCount.innerText = activeQuestionsPool.length;
+            const listContainer = DOM.questionsList;
             listContainer.innerHTML = '';
 
             if (activeQuestionsPool.length === 0) {
                 listContainer.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-secondary); font-size:0.8rem;">No questions available in the current pool. Please add some below.</div>';
                 return;
             }
+
+            const fragment = document.createDocumentFragment();
 
             activeQuestionsPool.forEach((qObj, index) => {
                 const item = document.createElement('div');
@@ -1098,8 +1302,10 @@
 
                 item.appendChild(qText);
                 item.appendChild(deleteBtn);
-                listContainer.appendChild(item);
+                fragment.appendChild(item);
             });
+
+            listContainer.appendChild(fragment);
         }
 
         // Save a newly submitted question (Limited to 100 max)
@@ -1108,7 +1314,7 @@
 
             // Set dynamic limit of maximum 100 questions prepared in the pool
             if (activeQuestionsPool.length >= 100) {
-                const errBanner = document.getElementById('admin-error');
+                const errBanner = DOM.adminError;
                 errBanner.innerText = "Cannot add more questions. Maximum limit of 100 prepared questions reached!";
                 errBanner.classList.remove('hidden');
                 
@@ -1118,21 +1324,12 @@
                 return;
             }
 
-            const questionText = document.getElementById('admin-question').value.trim();
-            const options = [
-                document.getElementById('opt-0').value.trim(),
-                document.getElementById('opt-1').value.trim(),
-                document.getElementById('opt-2').value.trim(),
-                document.getElementById('opt-3').value.trim()
-            ];
-            
-            const selectedRadio = document.querySelector('input[name="correct-index"]:checked');
-            const correctIndex = selectedRadio ? parseInt(selectedRadio.value, 10) : 0;
+            const questionText = DOM.adminQuestion.value.trim();
+            const answerText = DOM.adminAnswer.value.trim();
 
             const newQuestion = {
                 question: questionText,
-                options: options,
-                correctIndex: correctIndex
+                answer: answerText
             };
 
             // Inject to array and sync
@@ -1140,16 +1337,12 @@
             savePoolToLocalStorage();
 
             // Clear configuration inputs safely
-            document.getElementById('admin-question').value = '';
-            document.getElementById('opt-0').value = '';
-            document.getElementById('opt-1').value = '';
-            document.getElementById('opt-2').value = '';
-            document.getElementById('opt-3').value = '';
-            document.getElementById('radio-0').checked = true;
-            document.getElementById('char-counter').innerText = '0/100';
+            DOM.adminQuestion.value = '';
+            DOM.adminAnswer.value = '';
+            DOM.charCounter.innerText = '0/100';
 
             // Trigger visual feedback banner
-            const banner = document.getElementById('admin-success');
+            const banner = DOM.adminSuccess;
             banner.innerText = "Question added successfully to the pool!";
             banner.classList.remove('hidden');
 
@@ -1165,7 +1358,7 @@
             activeQuestionsPool.splice(index, 1);
             savePoolToLocalStorage();
             
-            const banner = document.getElementById('admin-success');
+            const banner = DOM.adminSuccess;
             banner.innerText = "Question successfully removed from the pool!";
             banner.classList.remove('hidden');
             
