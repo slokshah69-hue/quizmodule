@@ -1,0 +1,2342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Sequential Quiz Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Client-Side Word (.docx) and PowerPoint (.pptx) Parsing Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.5.0/mammoth.browser.min.js" defer></script>
+
+    <style>
+        :root {
+            --bg-dark: #02040a;
+            --bg-card: rgba(10, 15, 30, 0.75);
+            --bg-input: #0b111e;
+            --accent-blue: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --color-success: #10b981;
+            --color-danger: #f43f5e;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --transition-speed: 0.25s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #science-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            pointer-events: none;
+            background-color: var(--bg-dark);
+        }
+
+        .video-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, transparent 30%, rgba(2, 4, 10, 0.7) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 580px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .logo span {
+            color: var(--accent-blue);
+        }
+
+        nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        nav .nav-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        nav .nav-btn:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            color: var(--text-primary);
+        }
+        nav .nav-btn.active {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: var(--bg-dark);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 35px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            position: relative;
+            overflow: hidden;
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 100%;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .quiz-header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .pill-indicator {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            color: var(--text-secondary);
+        }
+        .pill-indicator.accent {
+            border-color: rgba(56, 189, 248, 0.2);
+            color: var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.03);
+        }
+
+        .mode-toggle-container {
+            display: flex;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+        }
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            font-family: inherit;
+        }
+        .mode-btn:hover {
+            color: var(--text-primary);
+        }
+        .mode-btn.active {
+            background-color: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 5px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 3px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent-blue);
+            width: 100%;
+            border-radius: 3px;
+        }
+
+        .timer-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        .timer-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 3px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.05);
+            background-color: rgba(255, 255, 255, 0.01);
+            will-change: transform;
+        }
+        .timer-circle.warning {
+            border-color: var(--color-danger);
+            color: var(--color-danger);
+            animation: pulse 1s infinite alternate;
+            box-shadow: 0 0 25px rgba(244, 63, 94, 0.15);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
+        }
+
+        .question-container {
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            line-height: 1.55;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        .answer-card {
+            position: relative;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 25px;
+            text-align: center;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(56, 189, 248, 0.05);
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .answer-glow {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .answer-label {
+            font-size: 0.75rem;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .answer-text {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .action-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            min-height: 80px;
+            margin-top: auto;
+        }
+
+        .quiz-controls-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .status-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            font-weight: 500;
+            min-height: 20px;
+        }
+
+        .form-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .input-group input[type="text"],
+        .input-group input[type="password"],
+        .input-group input[type="number"] {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all var(--transition-speed);
+            width: 100%;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+        }
+
+        .btn {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: inherit;
+        }
+        .btn:hover {
+            background-color: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+        .btn-primary {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: var(--bg-dark);
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+            box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+            transform: translateY(-2px);
+        }
+        .btn-success-outline {
+            background-color: rgba(16, 185, 129, 0.03);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: var(--color-success);
+        }
+        .btn-success-outline:hover {
+            background-color: rgba(16, 185, 129, 0.08);
+            border-color: var(--color-success);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.1);
+            transform: translateY(-1px);
+        }
+        .btn-block {
+            width: 100%;
+        }
+
+        .scorecard-view {
+            text-align: center;
+        }
+        .score-circle {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            border: 4px solid var(--accent-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 25px auto;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
+            animation: scaleUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes scaleUp {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .score-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        .admin-header h3 {
+            font-size: 1.2rem;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+
+        .question-list-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            color: var(--text-primary);
+        }
+        
+        .admin-sub-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .btn-sub-tab {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            flex: 1;
+            padding: 10px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+        .btn-sub-tab:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .btn-sub-tab.active {
+            background-color: rgba(56, 189, 248, 0.08);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .question-list-container {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background-color: rgba(0, 0, 0, 0.15);
+            padding: 5px;
+        }
+        
+        .question-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .question-list-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .question-list-container::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+        }
+        .question-list-container::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(56, 189, 248, 0.4);
+        }
+
+        .question-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            gap: 15px;
+            transition: background-color var(--transition-speed);
+        }
+        .question-list-item:last-child {
+            border-bottom: none;
+        }
+        .question-list-text {
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 250px;
+        }
+        .order-edit-input {
+            width: 55px;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--accent-blue);
+            text-align: center;
+            border-radius: 8px;
+            padding: 4px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all var(--transition-speed);
+        }
+        .order-edit-input:focus {
+            outline: none;
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+        }
+        .btn-delete {
+            background-color: transparent;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            color: var(--color-danger);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+        .btn-delete:hover {
+            background-color: var(--color-danger);
+            border-color: var(--color-danger);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
+        }
+
+        .bulk-upload-wrapper {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 25px;
+        }
+        .bulk-upload-wrapper h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent-blue);
+        }
+        .bulk-upload-wrapper p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.45;
+        }
+        .file-input-styled {
+            font-family: inherit;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+        .error-msg {
+            color: var(--color-danger);
+            font-size: 0.85rem;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+        .success-banner {
+            background-color: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--color-success);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+        .danger-banner {
+            background-color: rgba(244, 63, 94, 0.08);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            color: var(--color-danger);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="science-bg"></canvas>
+    <div class="video-overlay"></div>
+
+    <div class="app-container">
+        <header>
+            <div class="logo">Quiz<span>Portal</span></div>
+            <nav>
+                <button id="nav-quiz" class="nav-btn active" onclick="switchView('quiz')">Quiz</button>
+                <button id="nav-admin" class="nav-btn" onclick="switchView('admin')">Admin Panel</button>
+            </nav>
+        </header>
+
+        <main class="card">
+            
+            <section id="view-quiz" class="view-section active">
+                <div class="quiz-header-info">
+                    <span id="question-counter" class="pill-indicator">Question 1 of 1</span>
+                    <span id="live-score" class="pill-indicator accent">Progress: 0%</span>
+                </div>
+
+                <div class="mode-toggle-container">
+                    <button id="mode-auto" class="mode-btn active" onclick="setQuizMode('auto')">Auto Mode (Timer)</button>
+                    <button id="mode-manual" class="mode-btn" onclick="setQuizMode('manual')">Manual Mode</button>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div id="timeline" class="progress-bar"></div>
+                </div>
+                
+                <div class="timer-wrapper">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                        <div id="clock" class="timer-circle">30</div>
+                        <button id="btn-timer-control" class="btn btn-sm" onclick="toggleTimer()" style="padding: 6px 16px; font-size: 0.75rem; border-radius: 20px; border: 1px solid var(--border-color); color: var(--text-secondary); background: rgba(255,255,255,0.02);">Pause</button>
+                    </div>
+                </div>
+
+                <div class="question-container">
+                    <h2 id="quiz-question" class="question-text">Question Loading...</h2>
+                </div>
+
+                <div id="quiz-answer-wrapper" class="hidden">
+                    <div class="answer-card">
+                        <div class="answer-glow"></div>
+                        <span class="answer-label">Correct Answer</span>
+                        <h3 id="quiz-answer" class="answer-text">Answer Text</h3>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <p id="quiz-status" class="status-text">The answer will be revealed when the timer runs out!</p>
+                    <div class="quiz-controls-row">
+                        <button id="btn-show-answer" class="btn btn-success-outline hidden" onclick="revealAnswerManual()">Show Answer</button>
+                        <button id="btn-next" class="btn btn-primary hidden" onclick="handleNextStep()">Next Question</button>
+                    </div>
+                </div>
+            </section>
+
+            <div id="quiz-empty-state" class="hidden" style="text-align: center; padding: 40px 10px;">
+                <div style="font-size: 3.5rem; margin-bottom: 20px; filter: grayscale(0.2);">📭</div>
+                <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">Your Question Pool is Empty</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 320px; margin: 0 auto 25px; line-height: 1.5;">Access the Admin Panel to configure questions and launch your flashcards.</p>
+                <button class="btn btn-primary btn-block" style="max-width: 200px; margin: 0 auto;" onclick="switchView('admin')">Go to Admin Panel</button>
+            </div>
+
+            <section id="view-scorecard" class="view-section">
+                <div class="scorecard-view">
+                    <h2 class="form-title">Quiz Completed!</h2>
+                    <p class="subtitle">You have navigated through the active sequence pool.</p>
+                    <div class="score-circle">
+                        <span id="final-score">0</span>
+                        <div class="score-label">Questions</div>
+                    </div>
+                    <button class="btn btn-primary btn-block" style="margin-top: 15px;" onclick="restartQuizProcess()">Restart Quiz</button>
+                </div>
+            </section>
+
+            <section id="view-login" class="view-section">
+                <h2 class="form-title">Admin Login</h2>
+                <p class="subtitle">Access controls to prepare, append, or modify quiz structures</p>
+                <form onsubmit="handleAdminLogin(event)">
+                    <div class="input-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Username" required autocomplete="username">
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                        <input type="checkbox" id="remember-me" style="accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer;">
+                        <label for="remember-me" style="font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; user-select: none;">Remember me</label>
+                    </div>
+                    <div id="login-error" class="error-msg hidden">Invalid credentials. Please attempt again.</div>
+                    <button type="submit" class="btn btn-primary btn-block">Access Admin Settings</button>
+                </form>
+            </section>
+
+            <section id="view-admin-panel" class="view-section">
+                <div class="admin-header">
+                    <h3>Modify Quiz Setup</h3>
+                    <button class="btn btn-sm" onclick="handleAdminLogout()">Logout</button>
+                </div>
+
+                <!-- Timer configuration -->
+                <div style="background-color: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 25px;">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="admin-timer-duration" style="font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                            <span>Timer Duration (Seconds)</span>
+                            <span id="duration-val" style="color: var(--accent-blue); font-weight: 700;">30s</span>
+                        </label>
+                        <input type="range" id="admin-timer-duration" min="5" max="120" step="5" value="30" style="accent-color: var(--accent-blue); cursor: pointer; width: 100%; margin-top: 8px;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-top: 5px;">Adjust the allowed auto-countdown duration (5s - 120s).</span>
+                    </div>
+                </div>
+
+                <!-- Bulk upload feature -->
+                <div class="bulk-upload-wrapper">
+                    <h4>Bulk Upload Questions (.docx or .pptx)</h4>
+                    <p>
+                        <strong>Word Document:</strong> Use alternating lines of Questions and Answers, or use prefixes (e.g., <code>Q: What is X?</code> and <code>A: It is Y</code>).<br>
+                        <strong>PowerPoint Presentation:</strong> Each slide should have the Question as the title and the Answer inside the body / content box.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                        <input type="file" id="admin-file-upload" class="file-input-styled" accept=".docx,.pptx">
+                        <button type="button" class="btn btn-sm btn-success-outline" onclick="handleBulkFileUpload()">Import and Parse File</button>
+                    </div>
+                    <div id="upload-status" class="success-banner hidden" style="margin-top: 12px; margin-bottom: 0;"></div>
+                </div>
+                
+                <div id="admin-success" class="success-banner hidden">Question processed successfully!</div>
+                <div id="admin-error" class="danger-banner hidden">Limit reached!</div>
+                
+                <!-- Manual Add Question Form -->
+                <form onsubmit="handleSaveQuestion(event)">
+                    <div class="input-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label for="admin-question">Question Text</label>
+                            <span id="char-counter" style="font-size: 0.75rem; color: var(--text-secondary);">0/100</span>
+                        </div>
+                        <input type="text" id="admin-question" placeholder="e.g., What is the capital of Nepal?" maxlength="100" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="admin-answer">Correct Answer</label>
+                        <input type="text" id="admin-answer" placeholder="e.g., Kathmandu" required>
+                    </div>
+
+                    <div class="input-group" style="margin-bottom: 25px;">
+                        <label for="admin-order">Question Order</label>
+                        <input type="number" id="admin-order" min="1" placeholder="e.g., 1" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Add Question to Quiz Pool</button>
+                </form>
+
+                <h4 class="question-list-title">Existing Questions Pool (<span id="pool-count">0</span> / 100)</h4>
+                
+                <div class="admin-sub-tabs">
+                    <button id="tab-only-questions" class="btn-sub-tab active" onclick="switchAdminSubTab('only-questions')">Questions Panel</button>
+                    <button id="tab-questions-answers" class="btn-sub-tab" onclick="switchAdminSubTab('questions-answers')">Questions & Answers Panel</button>
+                </div>
+
+                <div id="panel-only-questions" class="question-list-container">
+                    <!-- Renders sorted questions only -->
+                </div>
+
+                <div id="panel-questions-answers" class="question-list-container hidden">
+                    <!-- Renders sorted questions and answers -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        const defaultQuizDataset = [];
+
+        let activeQuestionsPool = [];
+        let currentQuestionIndex = 0;
+        let maxTimerDuration = 30; 
+        let timerSeconds = maxTimerDuration;
+        let timerInterval = null;
+        let isAnswerRevealed = false;
+        let isTimerRunning = false;
+        let quizMode = 'auto'; 
+        let poolUpdated = false; 
+        let activeAdminSubTab = 'only-questions';
+
+        let DOM = {};
+
+        function initDOMCache() {
+            DOM = {
+                navQuiz: document.getElementById('nav-quiz'),
+                navAdmin: document.getElementById('nav-admin'),
+                viewQuiz: document.getElementById('view-quiz'),
+                viewScorecard: document.getElementById('view-scorecard'),
+                viewLogin: document.getElementById('view-login'),
+                viewAdminPanel: document.getElementById('view-admin-panel'),
+                emptyState: document.getElementById('quiz-empty-state'),
+                questionCounter: document.getElementById('question-counter'),
+                liveScore: document.getElementById('live-score'),
+                modeAuto: document.getElementById('mode-auto'),
+                modeManual: document.getElementById('mode-manual'),
+                timeline: document.getElementById('timeline'),
+                clock: document.getElementById('clock'),
+                btnTimerControl: document.getElementById('btn-timer-control'),
+                quizQuestion: document.getElementById('quiz-question'),
+                quizAnswerWrapper: document.getElementById('quiz-answer-wrapper'),
+                quizAnswer: document.getElementById('quiz-answer'),
+                quizStatus: document.getElementById('quiz-status'),
+                btnShowAnswer: document.getElementById('btn-show-answer'),
+                btnNext: document.getElementById('btn-next'),
+                finalScore: document.getElementById('final-score'),
+                username: document.getElementById('username'),
+                password: document.getElementById('password'),
+                rememberMe: document.getElementById('remember-me'),
+                loginError: document.getElementById('login-error'),
+                timerDuration: document.getElementById('admin-timer-duration'),
+                durationVal: document.getElementById('duration-val'),
+                adminSuccess: document.getElementById('admin-success'),
+                adminError: document.getElementById('admin-error'),
+                adminQuestion: document.getElementById('admin-question'),
+                adminAnswer: document.getElementById('admin-answer'),
+                adminOrder: document.getElementById('admin-order'),
+                charCounter: document.getElementById('char-counter'),
+                poolCount: document.getElementById('pool-count'),
+                tabOnlyQuestions: document.getElementById('tab-only-questions'),
+                tabQuestionsAnswers: document.getElementById('tab-questions-answers'),
+                panelOnlyQuestions: document.getElementById('panel-only-questions'),
+                panelQuestionsAnswers: document.getElementById('panel-questions-answers'),
+                quizHeaderInfo: document.querySelector('.quiz-header-info'),
+                modeToggleContainer: document.querySelector('.mode-toggle-container'),
+                progressBarContainer: document.querySelector('.progress-bar-container'),
+                timerWrapper: document.querySelector('.timer-wrapper'),
+                questionContainer: document.querySelector('.question-container'),
+                actionBar: document.querySelector('.action-bar')
+            };
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initDOMCache();
+
+            const savedDuration = localStorage.getItem('quiz_timer_duration');
+            if (savedDuration) {
+                maxTimerDuration = parseInt(savedDuration, 10);
+            }
+            
+            if (DOM.timerDuration) {
+                DOM.timerDuration.value = maxTimerDuration;
+            }
+            if (DOM.durationVal) {
+                DOM.durationVal.innerText = `${maxTimerDuration}s`;
+            }
+
+            loadQuestionsPool();
+            restartQuizProcess();
+
+            if (DOM.adminQuestion && DOM.charCounter) {
+                DOM.adminQuestion.addEventListener('input', () => {
+                    DOM.charCounter.innerText = `${DOM.adminQuestion.value.length}/100`;
+                });
+            }
+
+            if (DOM.timerDuration && DOM.durationVal) {
+                DOM.timerDuration.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value, 10);
+                    maxTimerDuration = val;
+                    DOM.durationVal.innerText = `${val}s`;
+                });
+
+                DOM.timerDuration.addEventListener('change', (e) => {
+                    localStorage.setItem('quiz_timer_duration', e.target.value);
+                });
+            }
+
+            const rememberedUser = localStorage.getItem('remembered_admin_username');
+            if (rememberedUser && DOM.username && DOM.rememberMe) {
+                DOM.username.value = rememberedUser;
+                DOM.rememberMe.checked = true;
+            }
+
+            initSolarSystemBackground();
+        });
+
+        function initSolarSystemBackground() {
+            const canvas = document.getElementById('science-bg');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+
+            let galaxies = [];
+
+            function generateSpiralGalaxy(cx, cy, maxRadius, arms, speed, innerColor, outerColor) {
+                const particles = [];
+                const particleCount = 200;
+                for (let i = 0; i < particleCount; i++) {
+                    const isCore = Math.random() < 0.22;
+                    let dist, angle;
+                    
+                    if (isCore) {
+                        dist = Math.random() * (maxRadius * 0.22);
+                        angle = Math.random() * Math.PI * 2;
+                    } else {
+                        dist = (maxRadius * 0.22) + Math.random() * (maxRadius * 0.78);
+                        const armIndex = Math.floor(Math.random() * arms);
+                        const armAngle = (armIndex / arms) * Math.PI * 2;
+                        const spiralFactor = 3.6;
+                        angle = armAngle + (dist / maxRadius) * spiralFactor + (Math.random() * 0.28 - 0.14);
+                    }
+                    
+                    particles.push({
+                        dist: dist,
+                        angle: angle,
+                        size: 0.4 + Math.random() * 1.3,
+                        alpha: 0.15 + Math.random() * 0.65,
+                        color: Math.random() > (dist / maxRadius) ? innerColor : outerColor
+                    });
+                }
+                return { cx, cy, speed, currentRotation: Math.random() * Math.PI * 2, particles, maxRadius, innerColor };
+            }
+
+            function createGalaxies() {
+                galaxies = [];
+                galaxies.push(generateSpiralGalaxy(width * 0.15, height * 0.25, 95, 2, 0.0016, '#a78bfa', '#f472b6'));
+                galaxies.push(generateSpiralGalaxy(width * 0.85, height * 0.75, 115, 3, -0.0012, '#67e8f9', '#3b82f6'));
+            }
+
+            createGalaxies();
+
+            window.addEventListener('resize', () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+                createGalaxies();
+            });
+
+            const nebulae = [
+                { x: 0.2, y: 0.3, r: 350, color: 'rgba(99, 102, 241, 0.04)' },  
+                { x: 0.8, y: 0.2, r: 400, color: 'rgba(236, 72, 153, 0.03)' },  
+                { x: 0.5, y: 0.8, r: 500, color: 'rgba(14, 165, 233, 0.03)' }   
+            ];
+
+            const starColors = ['#ffffff', '#bae6fd', '#fca5a5', '#fed7aa'];
+            const stars = [];
+            for (let i = 0; i < 220; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: 0.4 + Math.random() * 1.4,
+                    alpha: Math.random(),
+                    speed: 0.003 + Math.random() * 0.012,
+                    color: starColors[Math.floor(Math.random() * starColors.length)]
+                });
+            }
+
+            // Drifting Cosmic Dust Stars Layer
+            const cosmicDust = [];
+            const cosmicDustCount = 80;
+            for (let i = 0; i < cosmicDustCount; i++) {
+                cosmicDust.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: 0.2 + Math.random() * 0.8,
+                    vx: -0.05 - Math.random() * 0.1, // Drifts slowly to the left
+                    vy: (Math.random() - 0.5) * 0.04,
+                    alpha: 0.1 + Math.random() * 0.4,
+                    color: starColors[Math.floor(Math.random() * starColors.length)]
+                });
+            }
+
+            const asteroids = [];
+            const asteroidCount = 120;
+            for (let i = 0; i < asteroidCount; i++) {
+                asteroids.push({
+                    distance: 202 + Math.random() * 26,
+                    radius: 0.6 + Math.random() * 1.5,
+                    angle: Math.random() * Math.PI * 2,
+                    speed: 0.003 + Math.random() * 0.004,
+                    color: Math.random() > 0.5 ? '#64748b' : '#475569'
+                });
+            }
+
+            const comets = [];
+            function spawnComet() {
+                if (comets.length < 2 && Math.random() < 0.008) {
+                    comets.push({
+                        x: Math.random() * width,
+                        y: Math.random() * (height / 2),
+                        dx: 4 + Math.random() * 6,
+                        dy: 2 + Math.random() * 3,
+                        length: 40 + Math.random() * 60,
+                        alpha: 1,
+                        decay: 0.015 + Math.random() * 0.015
+                    });
+                }
+            }
+
+            const planets = [
+                { name: 'Mercury', distance: 60, radius: 3, speed: 0.02, color: '#94a3b8', angle: Math.random() * Math.PI * 2, hasAtmosphere: false },
+                { name: 'Venus', distance: 95, radius: 4.8, speed: 0.014, color: '#eab308', angle: Math.random() * Math.PI * 2, hasAtmosphere: true, atmosColor: 'rgba(234, 179, 8, 0.15)' },
+                { name: 'Earth', distance: 135, radius: 5.5, speed: 0.01, color: '#3b82f6', angle: Math.random() * Math.PI * 2, hasMoon: true, moonAngle: 0, hasAtmosphere: true, atmosColor: 'rgba(59, 130, 246, 0.2)' },
+                { name: 'Mars', distance: 180, radius: 4.2, speed: 0.008, color: '#ef4444', angle: Math.random() * Math.PI * 2, hasAtmosphere: false },
+                { name: 'Jupiter', distance: 245, radius: 11, speed: 0.005, color: '#f0abfc', angle: Math.random() * Math.PI * 2, isJupiter: true },
+                { name: 'Saturn', distance: 315, radius: 8.5, speed: 0.0035, color: '#fef08a', angle: Math.random() * Math.PI * 2, hasRings: true },
+                { name: 'Uranus', distance: 385, radius: 6.5, speed: 0.0022, color: '#a5f3fc', angle: Math.random() * Math.PI * 2, hasUranusRings: true },
+                { name: 'Neptune', distance: 455, radius: 6, speed: 0.0015, color: '#3b82f6', angle: Math.random() * Math.PI * 2, hasAtmosphere: true, atmosColor: 'rgba(59, 130, 246, 0.15)' }
+            ];
+
+            // Initialize Cosmic Dust Stars strictly tracking each planet's orbit
+            planets.forEach(p => {
+                p.orbitDust = [];
+                const dustCount = Math.max(30, Math.floor(p.distance * 0.45));
+                for (let i = 0; i < dustCount; i++) {
+                    p.orbitDust.push({
+                        angle: (i / dustCount) * Math.PI * 2 + (Math.random() * 0.03 - 0.015),
+                        size: 0.3 + Math.random() * 0.8,
+                        alpha: 0.05 + Math.random() * 0.25,
+                        radialOffset: (Math.random() - 0.5) * 2.5,
+                        twinkle: Math.random() * Math.PI
+                    });
+                }
+            });
+
+            // Dramatic roaming UFO parameters
+            const ufo = {
+                x: -50,
+                y: Math.random() * height,
+                targetX: Math.random() * width,
+                targetY: Math.random() * height,
+                speed: 0.02,
+                vx: 0,
+                vy: 0,
+                size: 14,
+                lights: ['#38bdf8', '#f43f5e', '#10b981', '#eab308'],
+                currentLightIndex: 0,
+                lightTick: 0,
+                hoverTimer: 0
+            };
+
+            let sunPulse = 0;
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                const cx = width / 2;
+                const cy = height / 2;
+
+                nebulae.forEach(n => {
+                    const nx = width * n.x;
+                    const ny = height * n.y;
+                    const grad = ctx.createRadialGradient(nx, ny, 0, nx, ny, n.r);
+                    grad.addColorStop(0, n.color);
+                    grad.addColorStop(1, 'rgba(2, 4, 10, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(nx, ny, n.r, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                galaxies.forEach(gal => {
+                    gal.currentRotation += gal.speed;
+                    const coreGlow = ctx.createRadialGradient(gal.cx, gal.cy, 0, gal.cx, gal.cy, gal.maxRadius * 0.28);
+                    coreGlow.addColorStop(0, '#ffffff');
+                    coreGlow.addColorStop(0.3, gal.innerColor);
+                    coreGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = coreGlow;
+                    ctx.beginPath();
+                    ctx.arc(gal.cx, gal.cy, gal.maxRadius * 0.28, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    gal.particles.forEach(p => {
+                        const totalAngle = p.angle + gal.currentRotation;
+                        const gx = gal.cx + p.dist * Math.cos(totalAngle);
+                        const gy = gal.cy + p.dist * Math.sin(totalAngle);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = p.alpha;
+                        ctx.beginPath();
+                        ctx.arc(gx, gy, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    ctx.globalAlpha = 1.0;
+                });
+
+                stars.forEach(s => {
+                    s.alpha += s.speed;
+                    if (s.alpha > 1 || s.alpha < 0) s.speed = -s.speed;
+                    ctx.fillStyle = s.color;
+                    ctx.globalAlpha = Math.max(0, Math.min(1, s.alpha));
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1.0; 
+
+                // Render and Update Drifting Cosmic Dust Stars
+                cosmicDust.forEach(dust => {
+                    dust.x += dust.vx;
+                    dust.y += dust.vy;
+
+                    if (dust.x < 0) dust.x = width;
+                    if (dust.y < 0) dust.y = height;
+                    if (dust.y > height) dust.y = 0;
+
+                    ctx.fillStyle = dust.color;
+                    ctx.globalAlpha = dust.alpha;
+                    ctx.beginPath();
+                    ctx.arc(dust.x, dust.y, dust.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1.0;
+
+                spawnComet();
+                for (let i = comets.length - 1; i >= 0; i--) {
+                    const c = comets[i];
+                    c.x += c.dx;
+                    c.y += c.dy;
+                    c.alpha -= c.decay;
+
+                    if (c.alpha <= 0 || c.x > width || c.y > height) {
+                        comets.splice(i, 1);
+                        continue;
+                    }
+
+                    const grad = ctx.createLinearGradient(c.x, c.y, c.x - c.dx * 8, c.y - c.dy * 8);
+                    grad.addColorStop(0, `rgba(255, 255, 255, ${c.alpha})`);
+                    grad.addColorStop(0.2, `rgba(56, 189, 248, ${c.alpha * 0.6})`);
+                    grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(c.x, c.y);
+                    ctx.lineTo(c.x - c.dx * 4, c.y - c.dy * 4);
+                    ctx.stroke();
+
+                    // Render dynamic transient comet cosmic dust trailing behind the tail
+                    for (let p = 0; p < 5; p++) {
+                        const t = Math.random();
+                        const px = c.x - c.dx * t * 6;
+                        const py = c.y - c.dy * t * 6;
+                        ctx.fillStyle = '#bae6fd';
+                        ctx.globalAlpha = c.alpha * (1 - t) * (0.2 + Math.random() * 0.4);
+                        ctx.beginPath();
+                        ctx.arc(px + (Math.random() - 0.5) * 6, py + (Math.random() - 0.5) * 6, 0.4 + Math.random() * 0.7, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.globalAlpha = 1.0;
+                }
+
+                sunPulse += 0.02;
+                const currentSunRadius = 16 + Math.sin(sunPulse) * 0.8;
+                const sunGlow = ctx.createRadialGradient(cx, cy, 2, cx, cy, currentSunRadius * 2.5);
+                sunGlow.addColorStop(0, '#ffffff');
+                sunGlow.addColorStop(0.2, '#f59e0b');
+                sunGlow.addColorStop(0.6, 'rgba(245, 158, 11, 0.2)');
+                sunGlow.addColorStop(1, 'rgba(2, 4, 10, 0)');
+                
+                ctx.fillStyle = sunGlow;
+                ctx.beginPath();
+                ctx.arc(cx, cy, currentSunRadius * 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, currentSunRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#f59e0b';
+                ctx.shadowColor = '#f59e0b';
+                ctx.shadowBlur = 30;
+                ctx.fill();
+                ctx.shadowBlur = 0; 
+
+                asteroids.forEach(ast => {
+                    ast.angle += ast.speed;
+                    const ax = cx + ast.distance * Math.cos(ast.angle);
+                    const ay = cy + ast.distance * Math.sin(ast.angle);
+                    
+                    // Main asteroid element
+                    ctx.beginPath();
+                    ctx.arc(ax, ay, ast.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = ast.color;
+                    ctx.fill();
+
+                    // Subtle asteroid dust glow wrapping the rock clusters
+                    if (Math.random() < 0.05) {
+                        ctx.fillStyle = 'rgba(100, 116, 139, 0.1)';
+                        ctx.beginPath();
+                        ctx.arc(ax, ay, ast.radius * 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                planets.forEach(p => {
+                    // Render Cosmic Dust Orbit Line (Replacing the solid line)
+                    p.orbitDust.forEach(dust => {
+                        dust.twinkle += 0.015;
+                        const currentAlpha = dust.alpha + Math.sin(dust.twinkle) * 0.06;
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = Math.max(0.02, Math.min(0.25, currentAlpha));
+
+                        const dist = p.distance + dust.radialOffset;
+                        const dx = cx + dist * Math.cos(dust.angle);
+                        const dy = cy + dist * Math.sin(dust.angle);
+
+                        ctx.beginPath();
+                        ctx.arc(dx, dy, dust.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    ctx.globalAlpha = 1.0;
+
+                    p.angle += p.speed;
+                    const px = cx + p.distance * Math.cos(p.angle);
+                    const py = cy + p.distance * Math.sin(p.angle);
+
+                    const grad = ctx.createRadialGradient(
+                        px - p.radius * 0.35 * Math.cos(p.angle), 
+                        py - p.radius * 0.35 * Math.sin(p.angle), 
+                        0, 
+                        px, py, p.radius
+                    );
+                    grad.addColorStop(0, p.color);
+                    grad.addColorStop(0.8, p.color);
+                    grad.addColorStop(1, '#000000'); 
+
+                    if (p.hasAtmosphere) {
+                        const atmosGrad = ctx.createRadialGradient(px, py, p.radius * 0.8, px, py, p.radius * 1.35);
+                        atmosGrad.addColorStop(0, p.atmosColor);
+                        atmosGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = atmosGrad;
+                        ctx.beginPath();
+                        ctx.arc(px, py, p.radius * 1.35, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(px, py, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+
+                    if (p.isJupiter) {
+                        ctx.beginPath();
+                        ctx.moveTo(px - p.radius + 1.2, py - p.radius * 0.3);
+                        ctx.lineTo(px + p.radius - 1.2, py - p.radius * 0.3);
+                        ctx.strokeStyle = 'rgba(120, 53, 4, 0.45)';
+                        ctx.lineWidth = 1.8;
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.moveTo(px - p.radius + 1.2, py + p.radius * 0.3);
+                        ctx.lineTo(px + p.radius - 1.2, py + p.radius * 0.3);
+                        ctx.strokeStyle = 'rgba(120, 53, 4, 0.45)';
+                        ctx.lineWidth = 1.8;
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.arc(px + p.radius * 0.35, py + p.radius * 0.1, 1.8, 0, Math.PI * 2);
+                        ctx.fillStyle = '#b91c1c';
+                        ctx.fill();
+                    }
+
+                    if (p.hasRings) {
+                        ctx.save();
+                        ctx.translate(px, py);
+                        ctx.rotate(0.35);
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, p.radius * 1.7, p.radius * 0.5, 0, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(251, 191, 36, 0.22)';
+                        ctx.lineWidth = 2.5;
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, p.radius * 2.1, p.radius * 0.6, 0, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(251, 191, 36, 0.12)';
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+
+                    if (p.hasUranusRings) {
+                        ctx.save();
+                        ctx.translate(px, py);
+                        ctx.rotate(1.4);
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, p.radius * 1.5, p.radius * 0.4, 0, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(165, 243, 252, 0.25)';
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+
+                    if (p.hasMoon) {
+                        p.moonAngle += 0.04;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 11, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+
+                        const mx = px + 11 * Math.cos(p.moonAngle);
+                        const my = py + 11 * Math.sin(p.moonAngle);
+                        ctx.beginPath();
+                        ctx.arc(mx, my, 1.2, 0, Math.PI * 2);
+                        ctx.fillStyle = '#cbd5e1';
+                        ctx.fill();
+                    }
+                });
+
+                // Render and Update UFO
+                const dx = ufo.targetX - ufo.x;
+                const dy = ufo.targetY - ufo.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 15) {
+                    ufo.hoverTimer++;
+                    ufo.vx *= 0.85;
+                    ufo.vy *= 0.85;
+                    if (ufo.hoverTimer > 100) { 
+                        ufo.targetX = Math.random() * width;
+                        ufo.targetY = Math.random() * height;
+                        ufo.hoverTimer = 0;
+                        ufo.speed = Math.random() < 0.35 ? 0.06 : 0.025; 
+                    }
+                } else {
+                    ufo.vx += (dx / dist) * ufo.speed * 1.5;
+                    ufo.vy += (dy / dist) * ufo.speed * 1.5;
+                    const maxVel = ufo.speed * 120;
+                    const vel = Math.sqrt(ufo.vx * ufo.vx + ufo.vy * ufo.vy);
+                    if (vel > maxVel) {
+                        ufo.vx = (ufo.vx / vel) * maxVel;
+                        ufo.vy = (ufo.vy / vel) * maxVel;
+                    }
+                }
+
+                ufo.x += ufo.vx;
+                ufo.y += ufo.vy;
+
+                const currentVel = Math.sqrt(ufo.vx * ufo.vx + ufo.vy * ufo.vy);
+
+                ctx.save();
+                
+                // Motion blur trail when moving fast
+                if (currentVel > 2) {
+                    ctx.save();
+                    ctx.translate(ufo.x, ufo.y);
+                    ctx.rotate(Math.atan2(ufo.vy, ufo.vx));
+                    const trailGrad = ctx.createLinearGradient(0, 0, -25, 0);
+                    trailGrad.addColorStop(0, 'rgba(56, 189, 248, 0.3)');
+                    trailGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                    ctx.fillStyle = trailGrad;
+                    ctx.beginPath();
+                    ctx.ellipse(-10, 0, 15, ufo.size * 0.25, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                ctx.translate(ufo.x, ufo.y);
+
+                // Pulsating dual-tone tractor beam when hovering
+                if (ufo.hoverTimer > 15 && ufo.hoverTimer < 85) {
+                    const pulseFactor = Math.sin(ufo.hoverTimer * 0.15) * 0.1 + 0.9;
+                    const beamGrad = ctx.createLinearGradient(0, 0, 0, 150);
+                    beamGrad.addColorStop(0, 'rgba(56, 189, 248, ' + (0.3 * pulseFactor) + ')');
+                    beamGrad.addColorStop(0.5, 'rgba(16, 185, 129, ' + (0.15 * pulseFactor) + ')');
+                    beamGrad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+                    ctx.fillStyle = beamGrad;
+                    ctx.beginPath();
+                    ctx.moveTo(-3, 1);
+                    ctx.lineTo(3, 1);
+                    ctx.lineTo(25 * pulseFactor, 150);
+                    ctx.lineTo(-25 * pulseFactor, 150);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Metallic main saucer body
+                ctx.fillStyle = '#334155';
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, ufo.size, ufo.size * 0.38, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Glowing cockpit dome
+                const domeGlow = ctx.createRadialGradient(0, -ufo.size * 0.12, 1, 0, -ufo.size * 0.12, ufo.size * 0.35);
+                domeGlow.addColorStop(0, '#ffffff');
+                domeGlow.addColorStop(0.4, '#06b6d4');
+                domeGlow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+                ctx.fillStyle = domeGlow;
+                ctx.beginPath();
+                ctx.arc(0, -ufo.size * 0.15, ufo.size * 0.35, Math.PI, 0);
+                ctx.fill();
+
+                // Bottom lights sequencing
+                ufo.lightTick++;
+                if (ufo.lightTick % 8 === 0) {
+                    ufo.currentLightIndex = (ufo.currentLightIndex + 1) % ufo.lights.length;
+                }
+
+                for (let i = -3; i <= 3; i++) {
+                    const lx = (i / 4) * ufo.size * 0.82;
+                    const ly = Math.abs(i) * 0.08 * ufo.size * 0.18;
+                    const lightColor = ufo.lights[(ufo.currentLightIndex + Math.abs(i)) % ufo.lights.length];
+                    
+                    ctx.fillStyle = lightColor;
+                    ctx.shadowColor = lightColor;
+                    ctx.shadowBlur = 6;
+                    ctx.beginPath();
+                    ctx.arc(lx, ly, 1.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.shadowBlur = 0; 
+                ctx.restore();
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function setQuizMode(mode) {
+            quizMode = mode;
+            
+            DOM.modeAuto.classList.toggle('active', mode === 'auto');
+            DOM.modeManual.classList.toggle('active', mode === 'manual');
+            
+            const timerWrapper = DOM.timerWrapper;
+            const progressContainer = DOM.progressBarContainer;
+            
+            if (mode === 'manual') {
+                timerWrapper.classList.add('hidden');
+                progressContainer.classList.add('hidden');
+                clearActiveTimer();
+                isTimerRunning = false;
+                if (activeQuestionsPool.length > 0 && !isAnswerRevealed) {
+                    DOM.quizStatus.innerText = "Click 'Show Answer' below to reveal the correct answer.";
+                    DOM.quizStatus.style.color = 'var(--text-secondary)';
+                }
+            } else {
+                timerWrapper.classList.remove('hidden');
+                progressContainer.classList.remove('hidden');
+                if (activeQuestionsPool.length > 0 && !isAnswerRevealed) {
+                    loadQuestionStep(currentQuestionIndex);
+                }
+            }
+            updateActionButtonsState();
+        }
+
+        function sortQuestionsPool() {
+            activeQuestionsPool.sort((a, b) => {
+                const orderA = parseInt(a.order, 10);
+                const orderB = parseInt(b.order, 10);
+                return orderA - orderB;
+            });
+        }
+
+        function loadQuestionsPool() {
+            const pool = localStorage.getItem('sequenced_questions_pool_v2');
+            if (pool) {
+                try {
+                    activeQuestionsPool = JSON.parse(pool);
+                    if (!Array.isArray(activeQuestionsPool)) {
+                        activeQuestionsPool = [...defaultQuizDataset];
+                    } else {
+                        activeQuestionsPool = activeQuestionsPool.map((item, index) => {
+                            const question = item.question || '';
+                            const answer = item.answer || (item.options && item.correctIndex !== undefined ? item.options[item.correctIndex] : '');
+                            const order = (item.order !== undefined && item.order !== null) ? parseInt(item.order, 10) : (index + 1);
+                            return { question, answer, order };
+                        });
+                    }
+                } catch (e) {
+                    activeQuestionsPool = [...defaultQuizDataset];
+                }
+            } else {
+                activeQuestionsPool = [...defaultQuizDataset];
+            }
+            sortQuestionsPool();
+        }
+
+        function savePoolToLocalStorage() {
+            localStorage.setItem('sequenced_questions_pool_v2', JSON.stringify(activeQuestionsPool));
+            poolUpdated = true;
+        }
+
+        function clearActiveTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function toggleTimer() {
+            if (quizMode !== 'auto' || isAnswerRevealed) return;
+
+            const timerBtn = DOM.btnTimerControl;
+            const statusLabel = DOM.quizStatus;
+
+            if (isTimerRunning) {
+                clearActiveTimer();
+                isTimerRunning = false;
+                if (timerBtn) {
+                    timerBtn.innerText = "Start";
+                    timerBtn.style.borderColor = "var(--accent-blue)";
+                    timerBtn.style.color = "var(--text-primary)";
+                }
+                statusLabel.innerText = "Timer stopped. Click 'Start' to resume.";
+                statusLabel.style.color = 'var(--text-secondary)';
+            } else {
+                isTimerRunning = true;
+                if (timerBtn) {
+                    timerBtn.innerText = "Pause";
+                    timerBtn.style.borderColor = "var(--border-color)";
+                    timerBtn.style.color = "var(--text-secondary)";
+                }
+                statusLabel.innerText = "The answer will be revealed when the timer runs out!";
+                
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    updateTimerDisplay(false);
+
+                    if (timerSeconds <= 0) {
+                        clearActiveTimer();
+                        isTimerRunning = false;
+                        revealAnswer();
+                    }
+                }, 1000);
+            }
+        }
+
+        function restartQuizProcess() {
+            currentQuestionIndex = 0;
+            loadQuestionsPool();
+            resumeQuizState();
+        }
+
+        function resumeQuizState() {
+            const emptyState = DOM.emptyState;
+            const activeQuizElements = [
+                DOM.quizHeaderInfo,
+                DOM.modeToggleContainer,
+                DOM.progressBarContainer,
+                DOM.timerWrapper,
+                DOM.questionContainer,
+                DOM.actionBar
+            ];
+
+            if (activeQuestionsPool.length === 0) {
+                emptyState.classList.remove('hidden');
+                activeQuizElements.forEach(el => el && el.classList.add('hidden'));
+                DOM.quizAnswerWrapper.classList.add('hidden');
+                clearActiveTimer();
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            activeQuizElements.forEach(el => el && el.classList.remove('hidden'));
+
+            if (currentQuestionIndex >= activeQuestionsPool.length) {
+                currentQuestionIndex = 0;
+            }
+
+            loadQuestionStep(currentQuestionIndex);
+        }
+
+        function loadQuestionStep(index) {
+            clearActiveTimer();
+            isAnswerRevealed = false;
+            timerSeconds = maxTimerDuration;
+
+            DOM.questionCounter.innerText = `Question ${index + 1} of ${activeQuestionsPool.length}`;
+            
+            const progressPercent = activeQuestionsPool.length > 0 ? Math.round((index / activeQuestionsPool.length) * 100) : 0;
+            DOM.liveScore.innerText = `Progress: ${progressPercent}%`;
+            
+            const activeStep = activeQuestionsPool[index];
+            DOM.quizQuestion.innerText = activeStep.question;
+            
+            DOM.quizAnswer.innerText = activeStep.answer;
+            DOM.quizAnswerWrapper.classList.add('hidden');
+
+            const timerBtn = DOM.btnTimerControl;
+
+            if (quizMode === 'auto') {
+                isTimerRunning = true;
+                if (timerBtn) {
+                    timerBtn.classList.remove('hidden');
+                    timerBtn.innerText = "Pause";
+                    timerBtn.style.borderColor = "var(--border-color)";
+                    timerBtn.style.color = "var(--text-secondary)";
+                }
+
+                DOM.quizStatus.innerText = "The answer will be revealed when the timer runs out!";
+                DOM.quizStatus.style.color = 'var(--text-secondary)';
+                updateTimerDisplay(true);
+
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    updateTimerDisplay(false);
+
+                    if (timerSeconds <= 0) {
+                        clearActiveTimer();
+                        isTimerRunning = false;
+                        revealAnswer();
+                    }
+                }, 1000);
+            } else {
+                isTimerRunning = false;
+                if (timerBtn) {
+                    timerBtn.classList.add('hidden');
+                }
+                DOM.quizStatus.innerText = "Click 'Show Answer' below to reveal the correct answer.";
+                DOM.quizStatus.style.color = 'var(--text-secondary)';
+            }
+
+            updateActionButtonsState();
+        }
+
+        function updateTimerDisplay(forceReset) {
+            const clock = DOM.clock;
+            const timeline = DOM.timeline;
+            
+            clock.innerText = timerSeconds;
+            const percentRemaining = (timerSeconds / maxTimerDuration) * 100;
+
+            if (forceReset) {
+                timeline.style.transition = 'none';
+                timeline.style.width = '100%';
+                
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        timeline.style.transition = 'width 1s linear, background-color 0.3s';
+                    });
+                });
+            } else {
+                timeline.style.width = `${percentRemaining}%`;
+            }
+
+            const alertThreshold = Math.max(3, Math.round(maxTimerDuration * 0.2));
+            if (timerSeconds <= alertThreshold) {
+                clock.classList.add('warning');
+                timeline.style.backgroundColor = 'var(--color-danger)';
+            } else {
+                clock.classList.remove('warning');
+                timeline.style.backgroundColor = 'var(--accent-blue)';
+            }
+        }
+
+        function revealAnswer() {
+            if (isAnswerRevealed) return;
+            isAnswerRevealed = true;
+
+            clearActiveTimer();
+            isTimerRunning = false;
+
+            const timerBtn = DOM.btnTimerControl;
+            if (timerBtn) {
+                timerBtn.classList.add('hidden');
+            }
+
+            DOM.quizAnswerWrapper.classList.remove('hidden');
+
+            const statusLabel = DOM.quizStatus;
+            if (quizMode === 'auto') {
+                statusLabel.innerText = "Time's up! The answer has been revealed.";
+                statusLabel.style.color = 'var(--accent-blue)';
+            } else {
+                statusLabel.innerText = "Answer revealed!";
+                statusLabel.style.color = 'var(--color-success)';
+            }
+
+            const nextButton = DOM.btnNext;
+            if (currentQuestionIndex + 1 < activeQuestionsPool.length) {
+                nextButton.innerText = "Next Question";
+            } else {
+                nextButton.innerText = "View Summary";
+            }
+
+            updateActionButtonsState();
+        }
+
+        function updateActionButtonsState() {
+            const showAnswerBtn = DOM.btnShowAnswer;
+            const nextBtn = DOM.btnNext;
+
+            if (activeQuestionsPool.length === 0) {
+                showAnswerBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                return;
+            }
+
+            if (isAnswerRevealed) {
+                showAnswerBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+            } else {
+                if (quizMode === 'manual') {
+                    showAnswerBtn.classList.remove('hidden');
+                } else {
+                    showAnswerBtn.classList.add('hidden');
+                }
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        function revealAnswerManual() {
+            revealAnswer();
+        }
+
+        function handleNextStep() {
+            if (currentQuestionIndex + 1 < activeQuestionsPool.length) {
+                currentQuestionIndex++;
+                loadQuestionStep(currentQuestionIndex);
+            } else {
+                showFinalScorecard();
+            }
+        }
+
+        function showFinalScorecard() {
+            clearActiveTimer();
+            DOM.viewQuiz.classList.remove('active');
+            DOM.viewScorecard.classList.add('active');
+            DOM.finalScore.innerText = `${activeQuestionsPool.length}`;
+        }
+
+        // Administrative configurations
+        function isAdminAuthenticated() {
+            return sessionStorage.getItem('admin_authenticated') === 'true' || 
+                   localStorage.getItem('admin_authenticated') === 'true';
+        }
+
+        function switchView(tab) {
+            DOM.navQuiz.classList.remove('active');
+            DOM.navAdmin.classList.remove('active');
+            
+            DOM.viewQuiz.classList.remove('active');
+            DOM.viewScorecard.classList.remove('active');
+            DOM.viewLogin.classList.remove('active');
+            DOM.viewAdminPanel.classList.remove('active');
+            DOM.emptyState.classList.add('hidden');
+
+            if (tab === 'quiz') {
+                DOM.navQuiz.classList.add('active');
+                DOM.viewQuiz.classList.add('active');
+                
+                if (poolUpdated) {
+                    restartQuizProcess();
+                    poolUpdated = false;
+                } else {
+                    resumeQuizState();
+                }
+            } else if (tab === 'admin') {
+                DOM.navAdmin.classList.add('active');
+                clearActiveTimer();
+                if (isAdminAuthenticated()) {
+                    showAdminDashboard();
+                } else {
+                    DOM.viewLogin.classList.add('active');
+                }
+            }
+        }
+
+        function handleAdminLogin(event) {
+            event.preventDefault();
+            const userIn = DOM.username.value.trim();
+            const passIn = DOM.password.value;
+            const errorLabel = DOM.loginError;
+            const rememberMe = DOM.rememberMe.checked;
+
+            if (userIn === "Anjana Shrestha" && passIn === "2026") {
+                errorLabel.classList.add('hidden');
+                
+                if (rememberMe) {
+                    localStorage.setItem('admin_authenticated', 'true');
+                    localStorage.setItem('remembered_admin_username', userIn);
+                } else {
+                    sessionStorage.setItem('admin_authenticated', 'true');
+                    localStorage.removeItem('remembered_admin_username');
+                }
+                
+                DOM.password.value = '';
+                showAdminDashboard();
+            } else {
+                errorLabel.classList.remove('hidden');
+            }
+        }
+
+        function handleAdminLogout() {
+            sessionStorage.removeItem('admin_authenticated');
+            localStorage.removeItem('admin_authenticated');
+            switchView('quiz');
+        }
+
+        function showAdminDashboard() {
+            DOM.viewLogin.classList.remove('active');
+            DOM.viewAdminPanel.classList.add('active');
+            
+            DOM.adminSuccess.classList.add('hidden');
+            DOM.adminError.classList.add('hidden');
+            
+            switchAdminSubTab(activeAdminSubTab);
+            renderAdminQuestionPoolList();
+        }
+
+        function switchAdminSubTab(subTab) {
+            activeAdminSubTab = subTab;
+            DOM.tabOnlyQuestions.classList.toggle('active', subTab === 'only-questions');
+            DOM.tabQuestionsAnswers.classList.toggle('active', subTab === 'questions-answers');
+            
+            DOM.panelOnlyQuestions.classList.toggle('hidden', subTab !== 'only-questions');
+            DOM.panelQuestionsAnswers.classList.toggle('hidden', subTab !== 'questions-answers');
+        }
+
+        function handleOrderEditChange(index, newOrderVal) {
+            const parsedOrder = parseInt(newOrderVal, 10);
+            if (isNaN(parsedOrder) || parsedOrder < 1) {
+                renderAdminQuestionPoolList();
+                return;
+            }
+            activeQuestionsPool[index].order = parsedOrder;
+            sortQuestionsPool();
+            savePoolToLocalStorage();
+            renderAdminQuestionPoolList();
+
+            const banner = DOM.adminSuccess;
+            banner.innerText = "Question sequence updated and pool sorted!";
+            banner.classList.remove('hidden');
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+
+        function renderAdminQuestionPoolList() {
+            loadQuestionsPool();
+            DOM.poolCount.innerText = activeQuestionsPool.length;
+            
+            if (DOM.adminOrder) {
+                DOM.adminOrder.value = activeQuestionsPool.length + 1;
+            }
+
+            const onlyQContainer = DOM.panelOnlyQuestions;
+            const qAndAContainer = DOM.panelQuestionsAnswers;
+            
+            onlyQContainer.innerHTML = '';
+            qAndAContainer.innerHTML = '';
+
+            if (activeQuestionsPool.length === 0) {
+                const emptyMsg = '<div style="padding:15px; text-align:center; color:var(--text-secondary); font-size:0.8rem;">No questions available in the current pool. Please add some below or import a file.</div>';
+                onlyQContainer.innerHTML = emptyMsg;
+                qAndAContainer.innerHTML = emptyMsg;
+                return;
+            }
+
+            const fragmentOnlyQ = document.createDocumentFragment();
+            const fragmentQAndA = document.createDocumentFragment();
+
+            activeQuestionsPool.forEach((qObj, index) => {
+                // 1. Build Item for "Questions Panel" (Only Questions)
+                const itemOnlyQ = document.createElement('div');
+                itemOnlyQ.className = 'question-list-item';
+                
+                const qTextOnlyQ = document.createElement('span');
+                qTextOnlyQ.className = 'question-list-text';
+                qTextOnlyQ.innerText = `[#${qObj.order}] ${qObj.question}`;
+                
+                const rightControlOnlyQ = document.createElement('div');
+                rightControlOnlyQ.style.display = 'flex';
+                rightControlOnlyQ.style.alignItems = 'center';
+                rightControlOnlyQ.style.gap = '8px';
+
+                const orderLabelOnlyQ = document.createElement('span');
+                orderLabelOnlyQ.style.fontSize = '0.75rem';
+                orderLabelOnlyQ.style.color = 'var(--text-secondary)';
+                orderLabelOnlyQ.innerText = 'Order:';
+
+                const orderInputOnlyQ = document.createElement('input');
+                orderInputOnlyQ.type = 'number';
+                orderInputOnlyQ.className = 'order-edit-input';
+                orderInputOnlyQ.value = qObj.order;
+                orderInputOnlyQ.min = '1';
+                orderInputOnlyQ.onchange = (e) => handleOrderEditChange(index, e.target.value);
+                
+                const deleteBtnOnlyQ = document.createElement('button');
+                deleteBtnOnlyQ.className = 'btn-delete';
+                deleteBtnOnlyQ.innerText = 'Delete';
+                deleteBtnOnlyQ.onclick = () => handleQuestionDeletion(index);
+
+                rightControlOnlyQ.appendChild(orderLabelOnlyQ);
+                rightControlOnlyQ.appendChild(orderInputOnlyQ);
+                rightControlOnlyQ.appendChild(deleteBtnOnlyQ);
+
+                itemOnlyQ.appendChild(qTextOnlyQ);
+                itemOnlyQ.appendChild(rightControlOnlyQ);
+                fragmentOnlyQ.appendChild(itemOnlyQ);
+
+                // 2. Build Item for "Questions & Answers Panel"
+                const itemQAndA = document.createElement('div');
+                itemQAndA.className = 'question-list-item';
+                itemQAndA.style.flexDirection = 'column';
+                itemQAndA.style.alignItems = 'flex-start';
+                itemQAndA.style.gap = '10px';
+                itemQAndA.style.padding = '15px 14px';
+
+                const headerRow = document.createElement('div');
+                headerRow.style.display = 'flex';
+                headerRow.style.justifyContent = 'space-between';
+                headerRow.style.alignItems = 'center';
+                headerRow.style.width = '100%';
+                headerRow.style.gap = '15px';
+
+                const qTextQAndA = document.createElement('span');
+                qTextQAndA.className = 'question-list-text';
+                qTextQAndA.style.fontWeight = '600';
+                qTextQAndA.style.color = 'var(--text-primary)';
+                qTextQAndA.style.whiteSpace = 'normal';
+                qTextQAndA.style.maxWidth = '100%';
+                qTextQAndA.innerText = `[#${qObj.order}] ${qObj.question}`;
+
+                const rightControlQAndA = document.createElement('div');
+                rightControlQAndA.style.display = 'flex';
+                rightControlQAndA.style.alignItems = 'center';
+                rightControlQAndA.style.gap = '8px';
+                rightControlQAndA.style.flexShrink = '0';
+
+                const orderLabelQAndA = document.createElement('span');
+                orderLabelQAndA.style.fontSize = '0.75rem';
+                orderLabelQAndA.style.color = 'var(--text-secondary)';
+                orderLabelQAndA.innerText = 'Order:';
+
+                const orderInputQAndA = document.createElement('input');
+                orderInputQAndA.type = 'number';
+                orderInputQAndA.className = 'order-edit-input';
+                orderInputQAndA.value = qObj.order;
+                orderInputQAndA.min = '1';
+                orderInputQAndA.onchange = (e) => handleOrderEditChange(index, e.target.value);
+                
+                const deleteBtnQAndA = document.createElement('button');
+                deleteBtnQAndA.className = 'btn-delete';
+                deleteBtnQAndA.innerText = 'Delete';
+                deleteBtnQAndA.onclick = () => handleQuestionDeletion(index);
+
+                rightControlQAndA.appendChild(orderLabelQAndA);
+                rightControlQAndA.appendChild(orderInputQAndA);
+                rightControlQAndA.appendChild(deleteBtnQAndA);
+
+                headerRow.appendChild(qTextQAndA);
+                headerRow.appendChild(rightControlQAndA);
+
+                const answerRow = document.createElement('div');
+                answerRow.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
+                answerRow.style.border = '1px solid rgba(16, 185, 129, 0.15)';
+                answerRow.style.padding = '6px 12px';
+                answerRow.style.borderRadius = '8px';
+                answerRow.style.fontSize = '0.8rem';
+                answerRow.style.color = 'var(--color-success)';
+                answerRow.style.width = '100%';
+                
+                const answerLabel = document.createElement('span');
+                answerLabel.style.color = 'var(--text-secondary)';
+                answerLabel.style.fontSize = '0.7rem';
+                answerLabel.style.textTransform = 'uppercase';
+                answerLabel.style.fontWeight = '700';
+                answerLabel.style.marginRight = '5px';
+                answerLabel.innerText = 'Answer:';
+
+                answerRow.appendChild(answerLabel);
+                answerRow.appendChild(document.createTextNode(qObj.answer));
+
+                itemQAndA.appendChild(headerRow);
+                itemQAndA.appendChild(answerRow);
+                fragmentQAndA.appendChild(itemQAndA);
+            });
+
+            onlyQContainer.appendChild(fragmentOnlyQ);
+            qAndAContainer.appendChild(fragmentQAndA);
+        }
+
+        function handleSaveQuestion(event) {
+            event.preventDefault();
+
+            if (activeQuestionsPool.length >= 100) {
+                const errBanner = DOM.adminError;
+                errBanner.innerText = "Cannot add more questions. Maximum limit of 100 prepared questions reached!";
+                errBanner.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    errBanner.classList.add('hidden');
+                }, 4000);
+                return;
+            }
+
+            const questionText = DOM.adminQuestion.value.trim();
+            const answerText = DOM.adminAnswer.value.trim();
+            const orderVal = parseInt(DOM.adminOrder.value, 10) || (activeQuestionsPool.length + 1);
+
+            const newQuestion = {
+                question: questionText,
+                answer: answerText,
+                order: orderVal
+            };
+
+            activeQuestionsPool.push(newQuestion);
+            sortQuestionsPool();
+            savePoolToLocalStorage();
+
+            DOM.adminQuestion.value = '';
+            DOM.adminAnswer.value = '';
+            DOM.charCounter.innerText = '0/100';
+
+            const banner = DOM.adminSuccess;
+            banner.innerText = "Question added successfully to the pool!";
+            banner.classList.remove('hidden');
+
+            renderAdminQuestionPoolList();
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+
+        function handleQuestionDeletion(index) {
+            activeQuestionsPool.splice(index, 1);
+            savePoolToLocalStorage();
+            
+            const banner = DOM.adminSuccess;
+            banner.innerText = "Question successfully removed from the pool!";
+            banner.classList.remove('hidden');
+            
+            renderAdminQuestionPoolList();
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+
+        /* -------------------------------------------------------------
+           WORD & POWERPOINT FILE PROCESSING FUNCTIONS
+           ------------------------------------------------------------- */
+
+        async function parseDocxFile(arrayBuffer) {
+            return new Promise((resolve, reject) => {
+                if (typeof mammoth === "undefined") {
+                    reject(new Error("Mammoth library not loaded. Check connection."));
+                    return;
+                }
+                mammoth.extractRawText({ arrayBuffer: arrayBuffer })
+                    .then(function (result) {
+                        const text = result.value;
+                        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+                        let questions = [];
+
+                        // Check if file uses explicit "Q:" or "A:" syntax patterns
+                        const hasExplicitPrefixes = lines.some(line => {
+                            return /^(q(uestion)?\s*?\d*?[:\.-]|\s*?a(nswer)?\s*?\d*?[:\.-])/i.test(line);
+                        });
+
+                        if (hasExplicitPrefixes) {
+                            let currentQuestion = null;
+                            lines.forEach(line => {
+                                if (/^(q(uestion)?\s*?\d*?[:\.-])/i.test(line)) {
+                                    if (currentQuestion && currentQuestion.question && currentQuestion.answer) {
+                                        questions.push(currentQuestion);
+                                    }
+                                    const cleanText = line.replace(/^(q(uestion)?\s*?\d*?[:\.-])/i, '').trim();
+                                    currentQuestion = { question: cleanText, answer: '', order: null };
+                                } else if (/^(a(nswer)?\s*?\d*?[:\.-])/i.test(line) && currentQuestion) {
+                                    const cleanText = line.replace(/^(a(nswer)?\s*?\d*?[:\.-])/i, '').trim();
+                                    currentQuestion.answer = cleanText;
+                                } else if (/^order\s*?[:\.-]/i.test(line) && currentQuestion) {
+                                    const orderNum = parseInt(line.replace(/^order\s*?[:\.-]/i, '').trim(), 10);
+                                    if (!isNaN(orderNum)) currentQuestion.order = orderNum;
+                                } else if (currentQuestion) {
+                                    if (currentQuestion.answer) {
+                                        currentQuestion.answer += ' ' + line;
+                                    } else {
+                                        currentQuestion.question += ' ' + line;
+                                    }
+                                }
+                            });
+                            if (currentQuestion && currentQuestion.question && currentQuestion.answer) {
+                                questions.push(currentQuestion);
+                            }
+                        } else {
+                            // Fallback: Pair alternating consecutive lines as [Q, A]
+                            for (let j = 0; j < lines.length; j += 2) {
+                                if (lines[j] && lines[j+1]) {
+                                    questions.push({
+                                        question: lines[j],
+                                        answer: lines[j+1],
+                                        order: null
+                                    });
+                                }
+                            }
+                        }
+                        resolve(questions);
+                    })
+                    .catch(reject);
+            });
+        }
+
+        async function parsePptxFile(arrayBuffer) {
+            if (typeof JSZip === "undefined") {
+                throw new Error("JSZip library not loaded. Check connection.");
+            }
+            const zip = new JSZip();
+            const loadedZip = await zip.loadAsync(arrayBuffer);
+            const slideFiles = [];
+
+            // Retrieve all XML presentation slides from ZIP structure
+            loadedZip.forEach((relativePath, file) => {
+                if (/^ppt\/slides\/slide\d+\.xml$/.test(relativePath)) {
+                    slideFiles.push({ path: relativePath, index: parseInt(relativePath.match(/\d+/)[0], 10) });
+                }
+            });
+
+            slideFiles.sort((a, b) => a.index - b.index);
+
+            const parsedQuestions = [];
+            const xmlParser = new DOMParser();
+
+            for (const slideInfo of slideFiles) {
+                const slideXmlStr = await loadedZip.file(slideInfo.path).async('text');
+                const xmlDoc = xmlParser.parseFromString(slideXmlStr, 'application/xml');
+
+                // Retrieve all XML presentation shapes (<p:sp>)
+                const shapes = xmlDoc.getElementsByTagNameNS("http://schemas.openxmlformats.org/presentationml/2006/main", "sp");
+                const textFrames = [];
+
+                for (let i = 0; i < shapes.length; i++) {
+                    const shape = shapes[i];
+                    // Get paragraphs <a:p> within this shape
+                    const paragraphs = shape.getElementsByTagNameNS("http://schemas.openxmlformats.org/drawingml/2006/main", "p");
+                    let shapeText = [];
+                    for (let j = 0; j < paragraphs.length; j++) {
+                        const p = paragraphs[j];
+                        // Get all text runs <a:t>
+                        const textRuns = p.getElementsByTagNameNS("http://schemas.openxmlformats.org/drawingml/2006/main", "t");
+                        let paraText = "";
+                        for (let k = 0; k < textRuns.length; k++) {
+                            paraText += textRuns[k].textContent;
+                        }
+                        paraText = paraText.trim();
+                        if (paraText) shapeText.push(paraText);
+                    }
+                    if (shapeText.length > 0) {
+                        textFrames.push(shapeText.join('\n'));
+                    }
+                }
+
+                // If a slide contains separate text boxes, map first to Q, rest to A
+                if (textFrames.length >= 2) {
+                    parsedQuestions.push({
+                        question: textFrames[0].trim(),
+                        answer: textFrames.slice(1).join('\n').trim(),
+                        order: slideInfo.index
+                    });
+                } else if (textFrames.length === 1) {
+                    // Check if slide contains explicit labels within a single text box
+                    const lines = textFrames[0].split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    if (lines.length >= 2) {
+                        let hasMarkers = lines.some(l => /^(q(uestion)?\s*?\d*?[:\.-]|\s*?a(nswer)?\s*?\d*?[:\.-])/i.test(l));
+                        if (hasMarkers) {
+                            let q = "";
+                            let a = "";
+                            lines.forEach(line => {
+                                if (/^(q(uestion)?\s*?\d*?[:\.-])/i.test(line)) {
+                                    q = line.replace(/^(q(uestion)?\s*?\d*?[:\.-])/i, '').trim();
+                                } else if (/^(a(nswer)?\s*?\d*?[:\.-])/i.test(line)) {
+                                    a = line.replace(/^(a(nswer)?\s*?\d*?[:\.-])/i, '').trim();
+                                }
+                            });
+                            if (q && a) {
+                                parsedQuestions.push({ question: q, answer: a, order: slideInfo.index });
+                            }
+                        } else {
+                            // First line as Q, remaining as A
+                            parsedQuestions.push({
+                                question: lines[0],
+                                answer: lines.slice(1).join('\n'),
+                                order: slideInfo.index
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Fallback: If slides are simple standalone single text boxes, pair them sequentially
+            if (parsedQuestions.length === 0 && slideFiles.length >= 2) {
+                const singleBoxTexts = [];
+                for (const slideInfo of slideFiles) {
+                    const slideXmlStr = await loadedZip.file(slideInfo.path).async('text');
+                    const xmlDoc = xmlParser.parseFromString(slideXmlStr, 'application/xml');
+                    const textRuns = xmlDoc.getElementsByTagNameNS("http://schemas.openxmlformats.org/drawingml/2006/main", "t");
+                    let slideText = "";
+                    for (let i = 0; i < textRuns.length; i++) {
+                        slideText += textRuns[i].textContent + " ";
+                    }
+                    slideText = slideText.trim();
+                    if (slideText) {
+                        singleBoxTexts.push({ text: slideText, index: slideInfo.index });
+                    }
+                }
+                for (let i = 0; i < singleBoxTexts.length; i += 2) {
+                    if (singleBoxTexts[i] && singleBoxTexts[i+1]) {
+                        parsedQuestions.push({
+                            question: singleBoxTexts[i].text,
+                            answer: singleBoxTexts[i+1].text,
+                            order: Math.floor(i/2) + 1
+                        });
+                    }
+                }
+            }
+            return parsedQuestions;
+        }
+
+        async function handleBulkFileUpload() {
+            const fileInput = document.getElementById('admin-file-upload');
+            const statusDiv = document.getElementById('upload-status');
+            
+            if (!fileInput || fileInput.files.length === 0) {
+                statusDiv.innerText = "Please select a file first.";
+                statusDiv.className = "danger-banner";
+                statusDiv.classList.remove('hidden');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const fileName = file.name.toLowerCase();
+
+            statusDiv.innerText = "Processing file, please wait...";
+            statusDiv.className = "success-banner";
+            statusDiv.classList.remove('hidden');
+
+            const reader = new FileReader();
+
+            reader.onload = async function (e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    let importedQuestions = [];
+
+                    if (fileName.endsWith('.docx')) {
+                        importedQuestions = await parseDocxFile(arrayBuffer);
+                    } else if (fileName.endsWith('.pptx')) {
+                        importedQuestions = await parsePptxFile(arrayBuffer);
+                    } else {
+                        statusDiv.innerText = "Unsupported file format. Please upload a .docx or .pptx file.";
+                        statusDiv.className = "danger-banner";
+                        return;
+                    }
+
+                    if (importedQuestions.length === 0) {
+                        statusDiv.innerText = "No readable questions and answers found in the file.";
+                        statusDiv.className = "danger-banner";
+                        return;
+                    }
+
+                    // Enforce the 100 maximum question pool limit
+                    if (activeQuestionsPool.length + importedQuestions.length > 100) {
+                        statusDiv.innerText = `Exceeds the limit. Only importing the first ${100 - activeQuestionsPool.length} questions.`;
+                        statusDiv.className = "danger-banner";
+                        importedQuestions = importedQuestions.slice(0, 100 - activeQuestionsPool.length);
+                    }
+
+                    // Generate incremental orders if not explicitly read
+                    let nextOrder = activeQuestionsPool.length > 0 
+                        ? Math.max(...activeQuestionsPool.map(q => q.order || 0)) + 1 
+                        : 1;
+
+                    importedQuestions.forEach(q => {
+                        if (q.order === null || q.order === undefined) {
+                            q.order = nextOrder++;
+                        }
+                        activeQuestionsPool.push(q);
+                    });
+
+                    sortQuestionsPool();
+                    savePoolToLocalStorage();
+                    renderAdminQuestionPoolList();
+
+                    statusDiv.innerText = `Successfully parsed and imported ${importedQuestions.length} questions!`;
+                    statusDiv.className = "success-banner";
+                    fileInput.value = ''; // Clear file input field
+
+                    setTimeout(() => {
+                        statusDiv.classList.add('hidden');
+                    }, 6000);
+
+                } catch (err) {
+                    console.error("Import error:", err);
+                    statusDiv.innerText = "Failed to parse the file. Please verify it is a valid document.";
+                    statusDiv.className = "danger-banner";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>
